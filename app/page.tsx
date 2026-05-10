@@ -11,7 +11,7 @@ import { Navbar } from "@/components/navbar"
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background bg-page-texture text-foreground">
       <Navbar />
       <HeroSection />
       <SignalPreview />

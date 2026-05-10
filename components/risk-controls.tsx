@@ -26,7 +26,7 @@ const controls = [
 
 export function RiskControls() {
   return (
-    <section className="bg-muted/30 px-6 py-20">
+    <section className="section-fade-divider bg-muted/30 px-6 py-20">
       <div className="container mx-auto">
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="mb-4 text-3xl font-semibold md:text-4xl">Built for controlled copy trading</h2>

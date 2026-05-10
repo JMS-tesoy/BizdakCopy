@@ -23,7 +23,7 @@ const faqs = [
 
 export function FaqSection() {
   return (
-    <section className="px-6 py-20">
+    <section className="section-fade-divider px-6 py-20">
       <div className="container mx-auto">
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <div>

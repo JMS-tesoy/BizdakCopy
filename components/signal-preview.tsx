@@ -50,7 +50,7 @@ const dashboardStats = [
 
 export function SignalPreview() {
   return (
-    <section className="px-6 py-20">
+    <section className="section-fade-divider px-6 py-20">
       <div className="container mx-auto">
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <Badge variant="secondary" className="mb-4">

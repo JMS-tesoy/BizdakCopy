@@ -129,3 +129,60 @@
     @apply font-sans;
     }
 }
+
+@layer utilities {
+  .bg-page-texture {
+    background-image:
+      radial-gradient(
+        circle at center,
+        color-mix(in oklab, var(--foreground) 3%, transparent) 0.035rem,
+        transparent 0.055rem
+      ),
+      radial-gradient(
+        circle at 50% 0%,
+        color-mix(in oklab, var(--primary) 14%, transparent),
+        transparent 30rem
+      ),
+      radial-gradient(
+        circle at 12% 26rem,
+        color-mix(in oklab, var(--muted) 60%, transparent),
+        transparent 24rem
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--muted) 35%, transparent) 0%,
+        var(--background) 34rem,
+        color-mix(in oklab, var(--muted) 28%, transparent) 100%
+      );
+    background-position:
+      center top,
+      center top,
+      center top,
+      center top;
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+    background-size:
+      0.45rem 0.45rem,
+      100% 38rem,
+      100% 46rem,
+      100% 100%;
+  }
+
+  .section-fade-divider {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .section-fade-divider::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 5rem;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--border) 20%, transparent),
+      transparent
+    );
+  }
+}

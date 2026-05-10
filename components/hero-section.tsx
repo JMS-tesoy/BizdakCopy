@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { HeroSignalSimulator } from "@/components/hero-signal-simulator"
 import { ArrowRight, TrendingUp, Shield, Zap } from "lucide-react"
 import Link from "next/link"
 
@@ -8,11 +9,11 @@ export function HeroSection() {
       <div className="container mx-auto">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-accent/50 px-4 py-2 rounded-full mb-6">
-            <div className="w-2 h-2 bg-chart-2 rounded-full animate-pulse" />
+            <div className="size-2 bg-chart-2 rounded-full animate-pulse" />
             <span className="text-sm text-muted-foreground">Live Trading Performance</span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-balance mb-6">
+          <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-balance mb-6">
             Copy Professional Forex
             <span className="block text-primary">Trading Signals</span>
           </h1>
@@ -26,7 +27,7 @@ export function HeroSection() {
             <Button size="lg" className="h-12 px-8" asChild>
               <Link href="/register">
                 Start Copying Now
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 size-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="h-12 px-8 bg-transparent" asChild>
@@ -34,10 +35,12 @@ export function HeroSection() {
             </Button>
           </div>
 
+          <HeroSignalSimulator />
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
             <div className="flex items-center gap-3 justify-center md:justify-start">
-              <div className="w-10 h-10 rounded-lg bg-chart-2/10 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-chart-2" />
+              <div className="size-10 rounded-lg bg-chart-2/10 flex items-center justify-center">
+                <TrendingUp className="size-5 text-chart-2" />
               </div>
               <div className="text-left">
                 <p className="font-semibold">+127.4%</p>
@@ -46,8 +49,8 @@ export function HeroSection() {
             </div>
 
             <div className="flex items-center gap-3 justify-center">
-              <div className="w-10 h-10 rounded-lg bg-chart-1/10 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-chart-1" />
+              <div className="size-10 rounded-lg bg-chart-1/10 flex items-center justify-center">
+                <Shield className="size-5 text-chart-1" />
               </div>
               <div className="text-left">
                 <p className="font-semibold">12.3%</p>
@@ -56,8 +59,8 @@ export function HeroSection() {
             </div>
 
             <div className="flex items-center gap-3 justify-center md:justify-end">
-              <div className="w-10 h-10 rounded-lg bg-chart-4/10 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-chart-4" />
+              <div className="size-10 rounded-lg bg-chart-4/10 flex items-center justify-center">
+                <Zap className="size-5 text-chart-4" />
               </div>
               <div className="text-left">
                 <p className="font-semibold">{"< 50ms"}</p>
