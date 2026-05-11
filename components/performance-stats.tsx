@@ -18,12 +18,14 @@ type PnlPoint = {
 }
 type MetricId =
   | "net-pnl"
-  | "pnl-percent"
+  | "sample-return"
   | "win-rate"
   | "profit-factor"
   | "max-drawdown"
   | "total-trades"
-  | "avg-trade"
+  | "best-month"
+  | "worst-month"
+  | "avg-hold"
 type ChartType = "area" | "bar"
 type PnlRange = "daily" | "weekly" | "monthly" | "three-months" | "six-months" | "yearly"
 
@@ -89,27 +91,27 @@ function formatSignedValue(value: number, formatter: (value: number) => string) 
 const performanceMetrics: PerformanceMetric[] = [
   {
     id: "net-pnl",
-    title: "PnL",
+    title: "Sample Net PnL",
     value: "+$12,740",
     change: "+$1,230",
     changeType: "positive",
     icon: DollarSign,
-    chartTitle: "Net PnL (2024)",
-    chartDescription: "Monthly realized profit and loss from closed trades.",
+    chartTitle: "Sample Net PnL (2024)",
+    chartDescription: "Demo monthly profit and loss for platform preview only.",
     chartType: "bar",
     data: makeMetricData([0, 850, 1200, -300, 1200, 1300, 800, 900, -500, 2200, 1400, 4540]),
     axisFormatter: compactDollarFormatter,
     tooltipFormatter: dollarFormatter,
   },
   {
-    id: "pnl-percent",
-    title: "PnL %",
+    id: "sample-return",
+    title: "Sample Return",
     value: "+127.4%",
     change: "+12.3%",
     changeType: "positive",
     icon: TrendingUp,
-    chartTitle: "PnL % Growth (2024)",
-    chartDescription: "Cumulative account growth expressed as percentage return.",
+    chartTitle: "Sample Return Preview (2024)",
+    chartDescription: "Demo cumulative return for UI preview, not verified live performance.",
     chartType: "area",
     data: makeMetricData([0, 8.5, 12, 9, 21, 34, 42, 51, 46, 68, 82, 127.4]),
     axisFormatter: percentFormatter,
@@ -122,8 +124,8 @@ const performanceMetrics: PerformanceMetric[] = [
     change: "+2.1%",
     changeType: "positive",
     icon: Target,
-    chartTitle: "Win Rate Trend (2024)",
-    chartDescription: "The percentage of closed trades that ended positive each month.",
+    chartTitle: "Sample Win Rate Trend (2024)",
+    chartDescription: "Demo percentage of closed trades that ended positive each month.",
     chartType: "area",
     data: makeMetricData([61.2, 64.8, 66.1, 62.7, 67.4, 69.2, 70.1, 68.9, 66.8, 69.7, 71.4, 68.7]),
     axisFormatter: percentFormatter,
@@ -136,8 +138,8 @@ const performanceMetrics: PerformanceMetric[] = [
     change: "+0.12",
     changeType: "positive",
     icon: BarChart3,
-    chartTitle: "Profit Factor Trend (2024)",
-    chartDescription: "Gross profit divided by gross loss, tracked monthly.",
+    chartTitle: "Sample Profit Factor Trend (2024)",
+    chartDescription: "Demo gross profit divided by gross loss, tracked monthly.",
     chartType: "area",
     data: makeMetricData([1.68, 1.82, 1.94, 1.73, 2.02, 2.12, 2.18, 2.21, 2.05, 2.28, 2.41, 2.34]),
     axisFormatter: decimalFormatter,
@@ -150,8 +152,8 @@ const performanceMetrics: PerformanceMetric[] = [
     change: "-1.2%",
     changeType: "negative",
     icon: Percent,
-    chartTitle: "Max Drawdown (2024)",
-    chartDescription: "Peak-to-trough pressure observed during each month.",
+    chartTitle: "Sample Max Drawdown (2024)",
+    chartDescription: "Demo peak-to-trough pressure observed during each month.",
     chartType: "area",
     data: makeMetricData([8.1, 9.4, 10.2, 12.8, 11.1, 10.7, 9.8, 11.6, 13.5, 12.9, 11.8, 12.3]),
     axisFormatter: percentFormatter,
@@ -164,26 +166,54 @@ const performanceMetrics: PerformanceMetric[] = [
     change: "+89",
     changeType: "positive",
     icon: Activity,
-    chartTitle: "Monthly Trade Volume",
-    chartDescription: "Closed trade count by month across the tracked signal history.",
+    chartTitle: "Sample Monthly Trade Volume",
+    chartDescription: "Demo closed trade count by month across the sample signal history.",
     chartType: "bar",
     data: makeMetricData([74, 86, 92, 88, 101, 107, 116, 121, 98, 124, 131, 109]),
     axisFormatter: countFormatter,
     tooltipFormatter: countFormatter,
   },
   {
-    id: "avg-trade",
-    title: "Avg Trade",
-    value: "+$18.42",
-    change: "+$2.10",
+    id: "best-month",
+    title: "Best Month",
+    value: "+24.9%",
+    change: "+9.8%",
     changeType: "positive",
     icon: TrendingUp,
-    chartTitle: "Average Trade Profit",
-    chartDescription: "Average realized profit per closed trade each month.",
+    chartTitle: "Sample Best Month",
+    chartDescription: "Demo monthly return values used to preview upside months.",
     chartType: "area",
-    data: makeMetricData([9.8, 11.25, 12.64, 10.12, 14.35, 16.18, 17.44, 18.02, 14.92, 19.4, 20.52, 18.42]),
-    axisFormatter: dollarFormatter,
-    tooltipFormatter: dollarFormatter,
+    data: makeMetricData([0, 8.5, 11.1, -2.7, 10.8, 10.7, 6.0, 6.3, -3.3, 15.1, 8.3, 24.9]),
+    axisFormatter: percentFormatter,
+    tooltipFormatter: percentFormatter,
+  },
+  {
+    id: "worst-month",
+    title: "Worst Month",
+    value: "-3.3%",
+    change: "-0.6%",
+    changeType: "negative",
+    icon: Percent,
+    chartTitle: "Sample Worst Month",
+    chartDescription: "Demo monthly return values used to show downside periods.",
+    chartType: "bar",
+    data: makeMetricData([0, 8.5, 11.1, -2.7, 10.8, 10.7, 6.0, 6.3, -3.3, 15.1, 8.3, 24.9]),
+    axisFormatter: percentFormatter,
+    tooltipFormatter: percentFormatter,
+  },
+  {
+    id: "avg-hold",
+    title: "Avg Hold",
+    value: "18h",
+    change: "-2h",
+    changeType: "negative",
+    icon: Activity,
+    chartTitle: "Sample Average Hold Time",
+    chartDescription: "Demo average time positions stayed open each month.",
+    chartType: "area",
+    data: makeMetricData([31, 28, 25, 29, 24, 22, 21, 20, 26, 19, 17, 18]),
+    axisFormatter: (value) => `${value.toFixed(0)}h`,
+    tooltipFormatter: (value) => `${value.toFixed(0)}h`,
   },
 ]
 
@@ -417,14 +447,14 @@ export function PerformanceStats() {
     <section id="performance" className="section-fade-divider bg-muted/30 px-6 py-20">
       <div className="container mx-auto">
         <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-semibold md:text-4xl">Live Performance</h2>
+          <h2 className="mb-4 text-3xl font-semibold md:text-4xl">Performance Preview</h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Verified trading results updated in real-time. All statistics are from actual trades executed on live
-            accounts.
+            Demo trading results for platform preview. Replace these sample figures with verified OKX account data before
+            public launch. Past performance does not guarantee future results.
           </p>
         </div>
 
-        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
+        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-9">
           {performanceMetrics.map((metric) => {
             const Icon = metric.icon
             const isSelected = metric.id === selectedMetric.id
@@ -451,7 +481,7 @@ export function PerformanceStats() {
                   </div>
                   <p className="text-xl font-bold">{metric.value}</p>
                   <p className={`text-xs ${metric.changeType === "positive" ? "text-chart-2" : "text-destructive"}`}>
-                    {metric.change} this month
+                    {metric.change} sample month
                   </p>
                 </div>
               </button>
@@ -481,10 +511,10 @@ export function PerformanceStats() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="size-5" aria-hidden="true" />
-                  OKX PnL Bars
+                  Sample OKX PnL Bars
                 </CardTitle>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Review realized PnL and PnL % by short-term, medium-term, or yearly periods.
+                  Review demo realized PnL and PnL % by short-term, medium-term, or yearly periods.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   <span className="rounded-md border border-border bg-background/60 px-2.5 py-1 text-muted-foreground">

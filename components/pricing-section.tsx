@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { Check } from "lucide-react"
 import Link from "next/link"
+import { ONBOARDING_ROUTE } from "@/lib/routes"
 
 const plans = [
   {
@@ -54,7 +55,7 @@ export function PricingSection() {
     <section id="pricing" className="section-fade-divider px-6 py-20">
       <div className="container mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple Pricing</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4">Simple Pricing</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Choose the plan that fits your OKX trading workflow. All plans include full signal access.
           </p>
@@ -92,7 +93,7 @@ export function PricingSection() {
               </CardContent>
               <CardFooter>
                 <Button className="w-full" variant={plan.popular ? "default" : "outline"} asChild>
-                  <Link href="/register">Get Started</Link>
+                  <Link href={ONBOARDING_ROUTE}>Start Onboarding</Link>
                 </Button>
               </CardFooter>
             </Card>

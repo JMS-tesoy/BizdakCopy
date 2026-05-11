@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { HeroSignalSimulator } from "@/components/hero-signal-simulator"
+import { ONBOARDING_ROUTE } from "@/lib/routes"
 import { ArrowRight, TrendingUp, Shield, Zap } from "lucide-react"
 import Link from "next/link"
 
@@ -19,19 +20,19 @@ export function HeroSection() {
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 text-pretty">
-            Built exclusively for OKX users. Connect your OKX API access, control your risk settings, and follow curated
-            crypto trading signals from one focused dashboard.
+            Built exclusively for OKX users. Review the strategy, configure your risk limits, connect restricted OKX API
+            credentials, and manually enable copy trading only when you are ready.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Button size="lg" className="h-12 px-8" asChild>
-              <Link href="/register">
-                Start Copying Now
+              <Link href={ONBOARDING_ROUTE}>
+                Start Follower Setup
                 <ArrowRight className="ml-2 size-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="h-12 px-8 bg-transparent" asChild>
-              <Link href="/docs">View OKX Setup</Link>
+              <Link href="#risk-controls">Review Risk First</Link>
             </Button>
           </div>
 
@@ -43,8 +44,8 @@ export function HeroSection() {
                 <TrendingUp className="size-5 text-chart-2" />
               </div>
               <div className="text-left">
-                <p className="font-semibold">+127.4%</p>
-                <p className="text-sm text-muted-foreground">Annual Return</p>
+                <p className="font-semibold">Sample</p>
+                <p className="text-sm text-muted-foreground">Return Preview</p>
               </div>
             </div>
 
@@ -54,7 +55,7 @@ export function HeroSection() {
               </div>
               <div className="text-left">
                 <p className="font-semibold">12.3%</p>
-                <p className="text-sm text-muted-foreground">Max Drawdown</p>
+                <p className="text-sm text-muted-foreground">Sample Drawdown</p>
               </div>
             </div>
 
@@ -63,8 +64,8 @@ export function HeroSection() {
                 <Zap className="size-5 text-chart-4" />
               </div>
               <div className="text-left">
-                <p className="font-semibold">{"< 50ms"}</p>
-                <p className="text-sm text-muted-foreground">Signal Latency</p>
+                <p className="font-semibold">Manual</p>
+                <p className="text-sm text-muted-foreground">Activation Required</p>
               </div>
             </div>
           </div>

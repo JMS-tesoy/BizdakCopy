@@ -1,13 +1,14 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { ONBOARDING_ROUTE } from "@/lib/routes"
 
 export function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <nav className="container mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <div className="size-8 bg-primary rounded-lg flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">BD</span>
           </div>
           <span className="font-semibold text-lg">Bizdak Copy</span>
@@ -31,7 +32,7 @@ export function Navbar() {
             <Link href="/login">Login</Link>
           </Button>
           <Button asChild>
-            <Link href="/register">Start Copying</Link>
+            <Link href={ONBOARDING_ROUTE}>Start Onboarding</Link>
           </Button>
         </div>
       </nav>

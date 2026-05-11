@@ -1,30 +1,30 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { KeyRound, Settings2, UserPlus, Zap } from "lucide-react"
+import { CheckCircle2, KeyRound, Settings2, ShieldCheck } from "lucide-react"
 
 const steps = [
   {
     step: 1,
-    title: "Create Account",
-    description: "Sign up, choose your plan, and open a dashboard designed only for OKX copy trading.",
-    icon: UserPlus,
+    title: "Review risk",
+    description: "Review the strategy preview, drawdown, risk rules, and disclosure before starting follower setup.",
+    icon: ShieldCheck,
   },
   {
     step: 2,
-    title: "Connect OKX",
-    description: "Add a restricted OKX API key so the platform can route copied trade instructions.",
-    icon: KeyRound,
-  },
-  {
-    step: 3,
-    title: "Set Risk Rules",
-    description: "Configure position sizing, max exposure, and copy limits before live signals run.",
+    title: "Configure limits",
+    description: "Create your account, accept risk, then set trade size, daily loss, allowed symbols, and copy mode.",
     icon: Settings2,
   },
   {
+    step: 3,
+    title: "Connect OKX safely",
+    description: "Submit a restricted OKX API Key, Secret Key, and Passphrase with Read and Trade on, Withdraw off.",
+    icon: KeyRound,
+  },
+  {
     step: 4,
-    title: "Auto Copy",
-    description: "Trades are automatically copied to your account in real-time with minimal latency.",
-    icon: Zap,
+    title: "Enable manually",
+    description: "The backend verifies access first. Copy trading stays off until you click Enable, and you can pause anytime.",
+    icon: CheckCircle2,
   },
 ]
 
@@ -33,9 +33,10 @@ export function HowItWorks() {
     <section id="how-it-works" className="section-fade-divider bg-muted/30 px-6 py-20">
       <div className="container mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4">How It Works</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Get started in minutes with a simple OKX setup flow. No external trading terminal required.
+            A controlled OKX-only flow: registered, risk accepted, limits configured, API verified, ready to enable,
+            active, or paused.
           </p>
         </div>
 

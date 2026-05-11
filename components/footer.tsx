@@ -7,13 +7,13 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <div className="size-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">BD</span>
               </div>
               <span className="font-semibold text-lg">Bizdak Copy</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Professional crypto copy trading platform built exclusively for OKX users.
+              Crypto copy trading workflow built exclusively for OKX users with restricted API permissions.
             </p>
           </div>
 
@@ -87,8 +87,12 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>Trading crypto involves significant risk. Past performance is not indicative of future results.</p>
-          <p className="mt-2">&copy; {new Date().getFullYear()} Bizdak Copy. All rights reserved.</p>
+          <p>
+            Copy trading involves risk. Past performance does not guarantee future results. Users are responsible for
+            their own OKX account, API permissions, risk settings, and trading capital. Withdraw permission is never
+            required.
+          </p>
+          <p className="mt-2">&copy; 2026 Bizdak Copy. All rights reserved.</p>
         </div>
       </div>
     </footer>

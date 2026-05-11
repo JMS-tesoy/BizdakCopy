@@ -13,7 +13,7 @@ const signals = [
     entry: "64,250.0",
     stopLoss: "62,900.0",
     takeProfit: "67,800.0",
-    latency: "34ms",
+    latency: "Preview",
   },
   {
     symbol: "ETH-USDT",
@@ -21,7 +21,7 @@ const signals = [
     entry: "3,120.4",
     stopLoss: "3,040.0",
     takeProfit: "3,285.0",
-    latency: "41ms",
+    latency: "Preview",
   },
   {
     symbol: "SOL-USDT",
@@ -29,15 +29,16 @@ const signals = [
     entry: "147.80",
     stopLoss: "152.40",
     takeProfit: "139.50",
-    latency: "29ms",
+    latency: "Preview",
   },
 ]
 
 const lifecycle = [
-  { label: "Signal received", icon: Radio },
+  { label: "Signal previewed", icon: Radio },
+  { label: "Risk rules checked", icon: Clock3 },
   { label: "OKX key verified", icon: KeyRound },
-  { label: "Order sent to OKX", icon: Activity },
-  { label: "OKX execution confirmed", icon: CheckCircle2 },
+  { label: "Manual copying enabled", icon: Activity },
+  { label: "Order routed to OKX", icon: CheckCircle2 },
 ]
 
 export function HeroSignalSimulator() {
@@ -67,10 +68,10 @@ export function HeroSignalSimulator() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Radio className="size-4 text-chart-2" aria-hidden="true" />
-              Live Signal Simulator
+              Signal Simulator
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Watch how a copied trade moves from signal feed to OKX execution.
+              Preview how a trade can move from signal review to OKX only after setup and manual activation.
             </p>
           </div>
           <Badge className="w-fit gap-1.5 bg-chart-2 text-chart-2-foreground">
@@ -104,7 +105,7 @@ export function HeroSignalSimulator() {
             <div className="mt-4 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Clock3 className="size-4" aria-hidden="true" />
-                Latency
+                Status
               </span>
               <span className="font-mono font-medium">{activeSignal.latency}</span>
             </div>

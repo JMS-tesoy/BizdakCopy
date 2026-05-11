@@ -11,6 +11,7 @@ import {
   ServerCog,
 } from "lucide-react"
 import Link from "next/link"
+import { ONBOARDING_ROUTE } from "@/lib/routes"
 
 const signals = [
   {
@@ -19,7 +20,7 @@ const signals = [
     entry: "64,250.0",
     stopLoss: "62,900.0",
     takeProfit: "67,800.0",
-    status: "Copied",
+    status: "Preview",
     age: "18s",
   },
   {
@@ -37,15 +38,15 @@ const signals = [
     entry: "3,120.4",
     stopLoss: "3,040.0",
     takeProfit: "3,285.0",
-    status: "Copied",
+    status: "Preview",
     age: "1m",
   },
 ]
 
 const dashboardStats = [
-  { label: "API status", value: "Connected", icon: CheckCircle2 },
-  { label: "Polling interval", value: "Realtime", icon: Activity },
-  { label: "Auth method", value: "API key", icon: KeyRound },
+  { label: "API status", value: "Verification required", icon: CheckCircle2 },
+  { label: "Copying state", value: "Off by default", icon: Activity },
+  { label: "Auth method", value: "Key + secret + passphrase", icon: KeyRound },
 ]
 
 export function SignalPreview() {
@@ -60,7 +61,7 @@ export function SignalPreview() {
             See how trades move from signal to OKX
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            A focused look at the live feed, OKX connection status, and API details traders use after signup.
+            A focused preview of the signal feed, OKX verification status, and API details followers review after signup.
           </p>
         </div>
 
@@ -68,12 +69,12 @@ export function SignalPreview() {
           <div className="rounded-lg border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
-                <h3 className="font-semibold">Live Signal Feed</h3>
-                <p className="text-sm text-muted-foreground">Latest crypto instructions ready for OKX users</p>
+                <h3 className="font-semibold">Sample Signal Feed</h3>
+                <p className="text-sm text-muted-foreground">Demo crypto instructions for OKX workflow preview</p>
               </div>
               <Badge className="gap-1.5 bg-chart-2 text-chart-2-foreground">
                 <span className="size-1.5 rounded-full bg-current" />
-                Online
+                Preview
               </Badge>
             </div>
 
@@ -150,12 +151,12 @@ export function SignalPreview() {
                     <Badge variant="outline">Protected</Badge>
                   </div>
                   <code className="block truncate rounded-md bg-background px-3 py-2 text-sm">
-                    fbc_live_••••••••••••9k2a
+                    okx_key_••••••••••••9k2a
                   </code>
                 </div>
 
                 <Button className="w-full" asChild>
-                  <Link href="/register">Create Your Dashboard</Link>
+                  <Link href={ONBOARDING_ROUTE}>Connect OKX Safely</Link>
                 </Button>
               </CardContent>
             </Card>

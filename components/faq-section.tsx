@@ -12,12 +12,22 @@ const faqs = [
   {
     question: "Can I stop copying?",
     answer:
-      "Yes. Disable copying from your dashboard, revoke the OKX API key, or pause subscription access from the platform workflow.",
+      "Yes. Copy trading should be paused or stopped from the dashboard at any time, and an emergency stop should remain visible in onboarding and dashboard views.",
   },
   {
     question: "What OKX API permissions are needed?",
     answer:
-      "Use the least permissions required for your copying workflow and keep withdrawal permissions disabled.",
+      "Use Read/View and Trade only. Withdraw permission is never required and must remain off. IP whitelisting is recommended when available.",
+  },
+  {
+    question: "Does connecting my API key start copy trading immediately?",
+    answer:
+      "No. The backend verifies authentication, balance access, trading permission, and IP whitelist rules first. Copy trading remains off until you manually enable it.",
+  },
+  {
+    question: "What happens to my Secret Key and Passphrase?",
+    answer:
+      "OKX requires an API Key, Secret Key, and Passphrase to authenticate signed trading requests. The Secret Key and Passphrase should be encrypted and never displayed again after saving.",
   },
 ]
 

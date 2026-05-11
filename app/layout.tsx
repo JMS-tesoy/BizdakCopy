@@ -8,7 +8,7 @@ import "./globals.css"
 export const metadata: Metadata = {
   title: "Bizdak Copy - OKX Crypto Copy Trading",
   description:
-    "Copy professional crypto trading signals through an OKX-only workflow with real-time signal delivery and risk controls.",
+    "Review OKX-only crypto copy trading, configure risk controls, and connect restricted API credentials with withdrawal permission off.",
   generator: "v0.app",
   icons: {
     icon: [

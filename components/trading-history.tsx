@@ -16,15 +16,16 @@ export function TradingHistory() {
     <section className="section-fade-divider px-6 py-20">
       <div className="container mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Recent Trades</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4">Recent Trades</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Transparent OKX trading history. Every copied crypto trade is recorded and available for verification.
+            Demo trading history for platform preview. Replace this sample data with verified OKX account records before
+            public launch.
           </p>
         </div>
 
         <Card className="max-w-4xl mx-auto">
           <CardHeader>
-            <CardTitle>Trade History</CardTitle>
+            <CardTitle>Sample Trade History</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
