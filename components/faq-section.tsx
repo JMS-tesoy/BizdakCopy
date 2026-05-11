@@ -1,23 +1,23 @@
 const faqs = [
   {
-    question: "Do I need a VPS?",
+    question: "Do I need another trading platform?",
     answer:
-      "A VPS is recommended if you want the MT5 terminal and copier EA to stay online continuously, especially during active market sessions.",
+      "No. This setup flow is designed for OKX users only, with connection handled through your OKX API access.",
   },
   {
-    question: "Does it work with any broker?",
+    question: "Does it work with any exchange?",
     answer:
-      "It is designed for MT5 accounts. Broker execution, symbol naming, and account permissions can still affect final copying behavior.",
+      "No. The product is positioned exclusively for OKX users. Other exchanges are outside this flow.",
   },
   {
     question: "Can I stop copying?",
     answer:
-      "Yes. Remove the EA, disable AutoTrading in MT5, or pause your subscription access from the platform workflow.",
+      "Yes. Disable copying from your dashboard, revoke the OKX API key, or pause subscription access from the platform workflow.",
   },
   {
-    question: "What happens if MT5 is offline?",
+    question: "What OKX API permissions are needed?",
     answer:
-      "Signals can still be published by the platform, but your local EA must be running and connected to receive and execute them.",
+      "Use the least permissions required for your copying workflow and keep withdrawal permissions disabled.",
   },
 ]
 
@@ -29,7 +29,7 @@ export function FaqSection() {
           <div>
             <h2 className="mb-4 text-3xl font-semibold md:text-4xl">Questions before you copy?</h2>
             <p className="text-muted-foreground">
-              Clear answers for the operational details traders usually check before connecting an EA.
+              Clear answers for the operational details traders usually check before connecting OKX.
             </p>
           </div>
 

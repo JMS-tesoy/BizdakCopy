@@ -1,24 +1,24 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { UserPlus, Download, Link, Zap } from "lucide-react"
+import { KeyRound, Settings2, UserPlus, Zap } from "lucide-react"
 
 const steps = [
   {
     step: 1,
     title: "Create Account",
-    description: "Sign up and choose your subscription plan. Get your unique API key instantly.",
+    description: "Sign up, choose your plan, and open a dashboard designed only for OKX copy trading.",
     icon: UserPlus,
   },
   {
     step: 2,
-    title: "Download EA",
-    description: "Download our MT5 Follower Expert Advisor and install it on your terminal.",
-    icon: Download,
+    title: "Connect OKX",
+    description: "Add a restricted OKX API key so the platform can route copied trade instructions.",
+    icon: KeyRound,
   },
   {
     step: 3,
-    title: "Connect API",
-    description: "Enter your API key in the EA settings. Configure your lot size and risk parameters.",
-    icon: Link,
+    title: "Set Risk Rules",
+    description: "Configure position sizing, max exposure, and copy limits before live signals run.",
+    icon: Settings2,
   },
   {
     step: 4,
@@ -35,7 +35,7 @@ export function HowItWorks() {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Get started in minutes with our simple 4-step process. No coding required.
+            Get started in minutes with a simple OKX setup flow. No external trading terminal required.
           </p>
         </div>
 
@@ -44,8 +44,8 @@ export function HowItWorks() {
             <Card key={item.step} className="bg-card relative overflow-hidden">
               <CardContent className="p-6">
                 <div className="absolute top-4 right-4 text-6xl font-bold text-muted/20">{item.step}</div>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <item.icon className="h-6 w-6 text-primary" />
+                <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-primary/10">
+                  <item.icon className="size-6 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
                 <p className="text-sm text-muted-foreground">{item.description}</p>

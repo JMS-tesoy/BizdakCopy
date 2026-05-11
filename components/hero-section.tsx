@@ -10,17 +10,17 @@ export function HeroSection() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-accent/50 px-4 py-2 rounded-full mb-6">
             <div className="size-2 bg-chart-2 rounded-full animate-pulse" />
-            <span className="text-sm text-muted-foreground">Live Trading Performance</span>
+            <span className="text-sm text-muted-foreground">OKX-Only Copy Trading</span>
           </div>
 
           <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-balance mb-6">
-            Copy Professional Forex
-            <span className="block text-primary">Trading Signals</span>
+            Copy Professional Crypto
+            <span className="block text-primary">Signals on OKX</span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 text-pretty">
-            Connect your MT5 account and automatically mirror our proven trading strategies. Simple REST API integration
-            with your Expert Advisor for seamless copy trading.
+            Built exclusively for OKX users. Connect your OKX API access, control your risk settings, and follow curated
+            crypto trading signals from one focused dashboard.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
@@ -31,7 +31,7 @@ export function HeroSection() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="h-12 px-8 bg-transparent" asChild>
-              <Link href="/download">Download EA</Link>
+              <Link href="/docs">View OKX Setup</Link>
             </Button>
           </div>
 

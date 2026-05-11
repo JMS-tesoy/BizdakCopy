@@ -8,36 +8,36 @@ import { Activity, CheckCircle2, Clock3, KeyRound, Radio } from "lucide-react"
 
 const signals = [
   {
-    symbol: "EURUSD",
+    symbol: "BTC-USDT",
     side: "BUY",
-    entry: "1.08420",
-    stopLoss: "1.07920",
-    takeProfit: "1.09420",
+    entry: "64,250.0",
+    stopLoss: "62,900.0",
+    takeProfit: "67,800.0",
     latency: "34ms",
   },
   {
-    symbol: "XAUUSD",
+    symbol: "ETH-USDT",
     side: "BUY",
-    entry: "2031.20",
-    stopLoss: "2024.80",
-    takeProfit: "2044.00",
+    entry: "3,120.4",
+    stopLoss: "3,040.0",
+    takeProfit: "3,285.0",
     latency: "41ms",
   },
   {
-    symbol: "GBPJPY",
+    symbol: "SOL-USDT",
     side: "SELL",
-    entry: "188.420",
-    stopLoss: "189.050",
-    takeProfit: "187.250",
+    entry: "147.80",
+    stopLoss: "152.40",
+    takeProfit: "139.50",
     latency: "29ms",
   },
 ]
 
 const lifecycle = [
   { label: "Signal received", icon: Radio },
-  { label: "API key verified", icon: KeyRound },
-  { label: "Copied to MT5", icon: Activity },
-  { label: "Execution confirmed", icon: CheckCircle2 },
+  { label: "OKX key verified", icon: KeyRound },
+  { label: "Order sent to OKX", icon: Activity },
+  { label: "OKX execution confirmed", icon: CheckCircle2 },
 ]
 
 export function HeroSignalSimulator() {
@@ -70,7 +70,7 @@ export function HeroSignalSimulator() {
               Live Signal Simulator
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Watch how a copied trade moves from signal feed to MT5 execution.
+              Watch how a copied trade moves from signal feed to OKX execution.
             </p>
           </div>
           <Badge className="w-fit gap-1.5 bg-chart-2 text-chart-2-foreground">

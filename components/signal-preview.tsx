@@ -14,29 +14,29 @@ import Link from "next/link"
 
 const signals = [
   {
-    symbol: "EURUSD",
+    symbol: "BTC-USDT",
     side: "BUY",
-    entry: "1.08420",
-    stopLoss: "1.07920",
-    takeProfit: "1.09420",
+    entry: "64,250.0",
+    stopLoss: "62,900.0",
+    takeProfit: "67,800.0",
     status: "Copied",
     age: "18s",
   },
   {
-    symbol: "GBPJPY",
+    symbol: "SOL-USDT",
     side: "SELL",
-    entry: "188.420",
-    stopLoss: "189.050",
-    takeProfit: "187.250",
+    entry: "147.80",
+    stopLoss: "152.40",
+    takeProfit: "139.50",
     status: "Queued",
     age: "42s",
   },
   {
-    symbol: "XAUUSD",
+    symbol: "ETH-USDT",
     side: "BUY",
-    entry: "2031.20",
-    stopLoss: "2024.80",
-    takeProfit: "2044.00",
+    entry: "3,120.4",
+    stopLoss: "3,040.0",
+    takeProfit: "3,285.0",
     status: "Copied",
     age: "1m",
   },
@@ -57,10 +57,10 @@ export function SignalPreview() {
             Platform Preview
           </Badge>
           <h2 className="mb-4 text-3xl font-semibold md:text-4xl">
-            See how trades move from signal to MT5
+            See how trades move from signal to OKX
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            A focused look at the live feed, account status, and API details traders use after signup.
+            A focused look at the live feed, OKX connection status, and API details traders use after signup.
           </p>
         </div>
 
@@ -69,7 +69,7 @@ export function SignalPreview() {
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
                 <h3 className="font-semibold">Live Signal Feed</h3>
-                <p className="text-sm text-muted-foreground">Latest instructions ready for copier EAs</p>
+                <p className="text-sm text-muted-foreground">Latest crypto instructions ready for OKX users</p>
               </div>
               <Badge className="gap-1.5 bg-chart-2 text-chart-2-foreground">
                 <span className="size-1.5 rounded-full bg-current" />

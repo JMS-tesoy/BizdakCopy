@@ -13,7 +13,7 @@ export function Footer() {
               <span className="font-semibold text-lg">Bizdak Copy</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Professional forex copy trading platform with MT5 integration.
+              Professional crypto copy trading platform built exclusively for OKX users.
             </p>
           </div>
 
@@ -36,8 +36,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/download" className="hover:text-foreground transition-colors">
-                  Download EA
+                <Link href="/docs" className="hover:text-foreground transition-colors">
+                  OKX Setup
                 </Link>
               </li>
             </ul>
@@ -87,7 +87,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>Trading forex involves significant risk. Past performance is not indicative of future results.</p>
+          <p>Trading crypto involves significant risk. Past performance is not indicative of future results.</p>
           <p className="mt-2">&copy; {new Date().getFullYear()} Bizdak Copy. All rights reserved.</p>
         </div>
       </div>

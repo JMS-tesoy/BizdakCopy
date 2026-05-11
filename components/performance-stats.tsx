@@ -8,7 +8,14 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ReferenceLine, XAx
 
 type ChangeType = "positive" | "negative"
 type MetricPoint = { month: string; value: number }
-type PnlPoint = { label: string; pnl: number; pnlPercent: number }
+type PnlPoint = {
+  date: string
+  pnl: number
+  pnlPercent: number
+  endDate?: string
+  label?: string
+  detail?: string
+}
 type MetricId =
   | "net-pnl"
   | "pnl-percent"
@@ -18,7 +25,7 @@ type MetricId =
   | "total-trades"
   | "avg-trade"
 type ChartType = "area" | "bar"
-type PnlRange = "daily" | "weekly" | "monthly"
+type PnlRange = "daily" | "weekly" | "monthly" | "three-months" | "six-months" | "yearly"
 
 type PerformanceMetric = {
   id: MetricId
@@ -180,47 +187,229 @@ const performanceMetrics: PerformanceMetric[] = [
   },
 ]
 
-const pnlRanges: Record<PnlRange, PnlPoint[]> = {
-  daily: [
-    { label: "Mon", pnl: 184, pnlPercent: 1.8 },
-    { label: "Tue", pnl: -76, pnlPercent: -0.7 },
-    { label: "Wed", pnl: 242, pnlPercent: 2.3 },
-    { label: "Thu", pnl: 118, pnlPercent: 1.1 },
-    { label: "Fri", pnl: 326, pnlPercent: 3.0 },
-  ],
-  weekly: [
-    { label: "W1", pnl: 680, pnlPercent: 6.4 },
-    { label: "W2", pnl: 420, pnlPercent: 3.8 },
-    { label: "W3", pnl: -210, pnlPercent: -1.9 },
-    { label: "W4", pnl: 1230, pnlPercent: 10.7 },
-  ],
-  monthly: [
-    { label: "Jan", pnl: 0, pnlPercent: 0 },
-    { label: "Feb", pnl: 850, pnlPercent: 8.5 },
-    { label: "Mar", pnl: 1200, pnlPercent: 11.1 },
-    { label: "Apr", pnl: -300, pnlPercent: -2.7 },
-    { label: "May", pnl: 1200, pnlPercent: 10.8 },
-    { label: "Jun", pnl: 1300, pnlPercent: 10.7 },
-    { label: "Jul", pnl: 800, pnlPercent: 6.0 },
-    { label: "Aug", pnl: 900, pnlPercent: 6.3 },
-    { label: "Sep", pnl: -500, pnlPercent: -3.3 },
-    { label: "Oct", pnl: 2200, pnlPercent: 15.1 },
-    { label: "Nov", pnl: 1400, pnlPercent: 8.3 },
-    { label: "Dec", pnl: 4540, pnlPercent: 24.9 },
-  ],
+const pnlRangeOptions: { id: PnlRange; label: string }[] = [
+  { id: "daily", label: "Daily" },
+  { id: "weekly", label: "Weekly" },
+  { id: "monthly", label: "Monthly" },
+  { id: "three-months", label: "3 Months" },
+  { id: "six-months", label: "6 Months" },
+  { id: "yearly", label: "Yearly" },
+]
+
+const dateMonthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+function toIsoDate(date: Date) {
+  return date.toISOString().slice(0, 10)
 }
 
+function formatDateLabel(date: Date) {
+  return `${dateMonthLabels[date.getUTCMonth()]} ${date.getUTCDate()}`
+}
+
+function formatIsoDateLabel(date: string) {
+  const [year, month, day] = date.split("-").map(Number)
+  return formatDateLabel(new Date(Date.UTC(year, month - 1, day)))
+}
+
+function formatDateRangeLabel(startDate: Date, endDate: Date) {
+  const startMonth = dateMonthLabels[startDate.getUTCMonth()]
+  const endMonth = dateMonthLabels[endDate.getUTCMonth()]
+  const startDay = startDate.getUTCDate()
+  const endDay = endDate.getUTCDate()
+
+  if (startMonth === endMonth) {
+    return `${startMonth} ${startDay}-${endDay}, 2024`
+  }
+
+  return `${startMonth} ${startDay}-${endMonth} ${endDay}, 2024`
+}
+
+function addUtcDays(date: Date, days: number) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days))
+}
+
+function makeDayBuckets(startMonth: number, startDay: number, count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(Date.UTC(2024, startMonth, startDay + index))
+
+    return {
+      date: toIsoDate(date),
+      label: formatDateLabel(date),
+      detail: `${formatDateLabel(date)}, 2024`,
+    }
+  })
+}
+
+function makeWeekBuckets(startMonth: number, startDay: number, count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const startDate = new Date(Date.UTC(2024, startMonth, startDay + index * 7))
+    const endDate = addUtcDays(startDate, 6)
+
+    return {
+      date: toIsoDate(startDate),
+      endDate: toIsoDate(endDate),
+      label: formatDateLabel(startDate),
+      detail: formatDateRangeLabel(startDate, endDate),
+    }
+  })
+}
+
+function makeMonthBuckets(startMonth: number, count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const monthIndex = startMonth + index
+    const monthLabel = dateMonthLabels[monthIndex % 12]
+    const year = 2024 + Math.floor(monthIndex / 12)
+    const startDate = new Date(Date.UTC(year, monthIndex % 12, 1))
+
+    return {
+      date: toIsoDate(startDate),
+      label: monthLabel,
+      detail: `${monthLabel} ${year}`,
+    }
+  })
+}
+
+const dailyPnlBuckets = makeDayBuckets(11, 16, 7)
+const weeklyPnlBuckets = makeWeekBuckets(10, 4, 8)
+const monthlyPnlBuckets = makeMonthBuckets(0, 12)
+const threeMonthPnlBuckets = makeWeekBuckets(9, 7, 13)
+const sixMonthPnlBuckets = makeWeekBuckets(6, 1, 26)
+const yearlyPnlBuckets = makeWeekBuckets(0, 1, 52)
+
+const pnlAxisConfig: Record<
+  PnlRange,
+  { ticks: string[]; formatter?: (value: string) => string }
+> = {
+  daily: {
+    ticks: [dailyPnlBuckets[0].date, dailyPnlBuckets[2].date, dailyPnlBuckets[4].date, dailyPnlBuckets[6].date],
+    formatter: formatIsoDateLabel,
+  },
+  weekly: {
+    ticks: [weeklyPnlBuckets[0].date, weeklyPnlBuckets[2].date, weeklyPnlBuckets[4].date, weeklyPnlBuckets[7].date],
+    formatter: formatIsoDateLabel,
+  },
+  monthly: {
+    ticks: [monthlyPnlBuckets[0].date, monthlyPnlBuckets[3].date, monthlyPnlBuckets[6].date, monthlyPnlBuckets[9].date, monthlyPnlBuckets[11].date],
+    formatter: (value) => {
+      const [year, month] = value.split("-").map(Number)
+      return dateMonthLabels[new Date(Date.UTC(year, month - 1, 1)).getUTCMonth()]
+    },
+  },
+  "three-months": {
+    ticks: [threeMonthPnlBuckets[0].date, threeMonthPnlBuckets[4].date, threeMonthPnlBuckets[8].date, threeMonthPnlBuckets[12].date],
+    formatter: formatIsoDateLabel,
+  },
+  "six-months": {
+    ticks: [sixMonthPnlBuckets[0].date, sixMonthPnlBuckets[6].date, sixMonthPnlBuckets[12].date, sixMonthPnlBuckets[19].date, sixMonthPnlBuckets[25].date],
+    formatter: formatIsoDateLabel,
+  },
+  yearly: {
+    ticks: [
+      yearlyPnlBuckets[0].date,
+      yearlyPnlBuckets[8].date,
+      yearlyPnlBuckets[17].date,
+      yearlyPnlBuckets[26].date,
+      yearlyPnlBuckets[35].date,
+      yearlyPnlBuckets[44].date,
+      yearlyPnlBuckets[51].date,
+    ],
+    formatter: (value) =>
+      ({
+        [yearlyPnlBuckets[0].date]: "Jan",
+        [yearlyPnlBuckets[8].date]: "Mar",
+        [yearlyPnlBuckets[17].date]: "May",
+        [yearlyPnlBuckets[26].date]: "Jul",
+        [yearlyPnlBuckets[35].date]: "Sep",
+        [yearlyPnlBuckets[44].date]: "Nov",
+        [yearlyPnlBuckets[51].date]: "Dec",
+      })[value] ?? value,
+  },
+}
+
+function makePnlPoints(
+  buckets: { date: string; endDate?: string; label?: string; detail?: string }[],
+  pnlValues: number[],
+  percentValues: number[],
+) {
+  return buckets.map((bucket, index) => ({
+    date: bucket.date,
+    endDate: bucket.endDate,
+    label: bucket.label,
+    detail: bucket.detail,
+    pnl: pnlValues[index],
+    pnlPercent: percentValues[index],
+  }))
+}
+
+const pnlRanges: Record<PnlRange, PnlPoint[]> = {
+  daily: makePnlPoints(
+    dailyPnlBuckets,
+    [184, -76, 242, 118, 326, 92, 64],
+    [1.8, -0.7, 2.3, 1.1, 3.0, 0.8, 0.6],
+  ),
+  weekly: makePnlPoints(
+    weeklyPnlBuckets,
+    [640, -180, 840, 620, 1030, -260, 1180, 1320],
+    [5.8, -1.4, 7.2, 5.1, 8.4, -1.9, 8.8, 9.5],
+  ),
+  monthly: makePnlPoints(
+    monthlyPnlBuckets,
+    [0, 850, 1200, -300, 1200, 1300, 800, 900, -500, 2200, 1400, 4540],
+    [0, 8.5, 11.1, -2.7, 10.8, 10.7, 6.0, 6.3, -3.3, 15.1, 8.3, 24.9],
+  ),
+  "three-months": makePnlPoints(
+    threeMonthPnlBuckets,
+    [320, -180, 540, 410, 620, -260, 760, 480, 690, 820, -310, 980, 1120],
+    [2.6, -1.4, 4.3, 3.1, 4.7, -1.9, 5.2, 3.3, 4.6, 5.1, -2.0, 5.8, 6.4],
+  ),
+  "six-months": makePnlPoints(
+    sixMonthPnlBuckets,
+    [
+      210, 340, -160, 480, 520, 390, -230, 610, 470, 550, 680, -310, 740,
+      620, 810, -280, 930, 760, 870, 1020, -420, 1120, 980, 1250, 1180, 1420,
+    ],
+    [
+      1.5, 2.4, -1.1, 3.2, 3.5, 2.6, -1.5, 4.0, 3.0, 3.4, 4.1, -1.8,
+      4.3, 3.5, 4.4, -1.4, 4.8, 3.7, 4.1, 4.6, -1.8, 4.9, 4.0, 4.8,
+      4.3, 5.0,
+    ],
+  ),
+  yearly: makePnlPoints(
+    yearlyPnlBuckets,
+    [
+      120, 180, -90, 260, 310, 240, -130, 360, 280, 330, 410, -170, 450,
+      380, 510, -160, 560, 420, 490, 610, -220, 650, 580, 720, 690, 760,
+      -240, 820, 700, 780, 860, -310, 920, 830, 970, 1040, -280, 1120, 980,
+      1160, 1250, -360, 1320, 1190, 1410, 1500, -420, 1580, 1460, 1660, 1740,
+      1890,
+    ],
+    [
+      0.8, 1.2, -0.6, 1.7, 2.0, 1.5, -0.8, 2.2, 1.7, 2.0, 2.4, -0.9,
+      2.5, 2.0, 2.6, -0.8, 2.7, 2.0, 2.2, 2.6, -0.9, 2.7, 2.3, 2.8, 2.6,
+      2.8, -0.8, 2.9, 2.4, 2.6, 2.8, -0.9, 3.0, 2.6, 3.0, 3.1, -0.8,
+      3.2, 2.8, 3.2, 3.3, -0.9, 3.4, 3.0, 3.5, 3.6, -1.0, 3.7, 3.3, 3.8,
+      3.9, 4.1,
+    ],
+  ),
+}
+
+const defaultMetricId: MetricId = "max-drawdown"
+const defaultPnlRange: PnlRange = "yearly"
+
 function getInitialMetric() {
-  return performanceMetrics[0]
+  return performanceMetrics.find((metric) => metric.id === defaultMetricId) ?? performanceMetrics[0]
 }
 
 export function PerformanceStats() {
   const [selectedMetricId, setSelectedMetricId] = React.useState<MetricId>(getInitialMetric().id)
-  const [selectedPnlRange, setSelectedPnlRange] = React.useState<PnlRange>("daily")
+  const [selectedPnlRange, setSelectedPnlRange] = React.useState<PnlRange>(defaultPnlRange)
   const selectedMetric =
     performanceMetrics.find((metric) => metric.id === selectedMetricId) ?? getInitialMetric()
   const SelectedIcon = selectedMetric.icon
   const selectedPnlData = pnlRanges[selectedPnlRange]
+  const selectedPnlAxis = pnlAxisConfig[selectedPnlRange]
+  const selectedPnlRangeLabel =
+    pnlRangeOptions.find((range) => range.id === selectedPnlRange)?.label ?? "Yearly"
   const pnlTotal = selectedPnlData.reduce((sum, point) => sum + point.pnl, 0)
   const pnlPercentTotal = selectedPnlData.reduce((sum, point) => sum + point.pnlPercent, 0)
 
@@ -292,57 +481,57 @@ export function PerformanceStats() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="size-5" aria-hidden="true" />
-                  MT5-Style PnL Bars
+                  OKX PnL Bars
                 </CardTitle>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Review realized PnL and PnL % by daily, weekly, or monthly periods.
+                  Review realized PnL and PnL % by short-term, medium-term, or yearly periods.
                 </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="rounded-md border border-border bg-background/60 px-2.5 py-1 text-muted-foreground">
+                    {selectedPnlRangeLabel} summary
+                  </span>
+                  <span className={`rounded-md border border-border bg-background/60 px-2.5 py-1 font-medium ${getStateTextClass(pnlTotal)}`}>
+                    {formatSignedValue(pnlTotal, dollarFormatter)}
+                  </span>
+                  <span className={`rounded-md border border-border bg-background/60 px-2.5 py-1 font-medium ${getStateTextClass(pnlPercentTotal)}`}>
+                    {formatSignedValue(pnlPercentTotal, percentFormatter)}
+                  </span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 rounded-lg bg-muted p-1 text-sm">
-                {(["daily", "weekly", "monthly"] as const).map((range) => (
+              <div className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm sm:grid-cols-3 lg:grid-cols-6">
+                {pnlRangeOptions.map((range) => (
                   <button
-                    key={range}
+                    key={range.id}
                     type="button"
-                    aria-pressed={selectedPnlRange === range}
-                    onClick={() => setSelectedPnlRange(range)}
-                    className={`rounded-md px-3 py-1.5 font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      selectedPnlRange === range
+                    aria-pressed={selectedPnlRange === range.id}
+                    onClick={() => setSelectedPnlRange(range.id)}
+                    className={`rounded-md px-3 py-1.5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      selectedPnlRange === range.id
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {range}
+                    {range.label}
                   </button>
                 ))}
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-border p-4">
-                <p className="text-sm text-muted-foreground">Selected PnL</p>
-                <p className={`text-2xl font-bold ${getStateTextClass(pnlTotal)}`}>
-                  {formatSignedValue(pnlTotal, dollarFormatter)}
-                </p>
-              </div>
-              <div className="rounded-lg border border-border p-4">
-                <p className="text-sm text-muted-foreground">Selected PnL %</p>
-                <p className={`text-2xl font-bold ${getStateTextClass(pnlPercentTotal)}`}>
-                  {formatSignedValue(pnlPercentTotal, percentFormatter)}
-                </p>
-              </div>
-            </div>
-
             <div className="h-[280px] w-full">
               <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
                 <BarChart accessibilityLayer data={selectedPnlData}>
                   <CartesianGrid vertical={false} />
                   <XAxis
-                    dataKey="label"
+                    dataKey="date"
                     axisLine={false}
                     tickLine={false}
+                    interval={0}
+                    minTickGap={16}
+                    ticks={selectedPnlAxis.ticks}
                     tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                    tickFormatter={selectedPnlAxis.formatter}
                   />
                   <YAxis
                     axisLine={false}
@@ -363,7 +552,7 @@ export function PerformanceStats() {
                               {formatSignedValue(point.pnl, dollarFormatter)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {point.label} · {formatSignedValue(point.pnlPercent, percentFormatter)}
+                              {point.detail ?? point.label} · {formatSignedValue(point.pnlPercent, percentFormatter)}
                             </p>
                           </div>
                         )

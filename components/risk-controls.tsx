@@ -4,7 +4,7 @@ import { KeyRound, LockKeyhole, ShieldCheck, SlidersHorizontal } from "lucide-re
 const controls = [
   {
     title: "No fund custody",
-    description: "Your broker account stays under your control while the EA only reads copied signal instructions.",
+    description: "Your funds stay inside OKX while the platform focuses on routing approved copy trade instructions.",
     icon: ShieldCheck,
   },
   {
@@ -13,8 +13,8 @@ const controls = [
     icon: KeyRound,
   },
   {
-    title: "MT5 risk settings",
-    description: "Configure lot sizing and account exposure in the EA before copying begins.",
+    title: "OKX risk settings",
+    description: "Configure position sizing, copy limits, and account exposure before copying begins.",
     icon: SlidersHorizontal,
   },
   {
@@ -31,8 +31,8 @@ export function RiskControls() {
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="mb-4 text-3xl font-semibold md:text-4xl">Built for controlled copy trading</h2>
           <p className="text-muted-foreground">
-            The platform focuses on signal delivery, subscription access, and copier configuration without taking over
-            the trader&apos;s broker account.
+            The platform focuses on signal delivery, subscription access, and OKX copier configuration without taking
+            custody of trader funds.
           </p>
         </div>
 

@@ -6,9 +6,9 @@ import "./globals.css"
 
 // <CHANGE> Updated metadata for copy trading platform
 export const metadata: Metadata = {
-  title: "FINBRO Copy - Professional Forex Copy Trading",
+  title: "Bizdak Copy - OKX Crypto Copy Trading",
   description:
-    "Copy professional forex trading signals directly to your MT5 account. Real-time signal delivery via REST API.",
+    "Copy professional crypto trading signals through an OKX-only workflow with real-time signal delivery and risk controls.",
   generator: "v0.app",
   icons: {
     icon: [

@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import { Check } from "lucide-react"
 import Link from "next/link"
 
@@ -8,8 +10,8 @@ const plans = [
     name: "Starter",
     price: "$49",
     period: "/month",
-    description: "Perfect for beginners",
-    features: ["Copy all signals", "Up to 2 MT5 accounts", "Email notifications", "Basic support", "API access"],
+    description: "Perfect for solo OKX users",
+    features: ["Copy all signals", "1 OKX account", "Email notifications", "Basic support", "API access"],
     popular: false,
   },
   {
@@ -19,7 +21,7 @@ const plans = [
     description: "For serious traders",
     features: [
       "Copy all signals",
-      "Up to 5 MT5 accounts",
+      "Up to 3 OKX accounts",
       "Email & SMS notifications",
       "Priority support",
       "API access",
@@ -35,7 +37,7 @@ const plans = [
     description: "For institutions",
     features: [
       "Copy all signals",
-      "Unlimited MT5 accounts",
+      "Unlimited OKX accounts",
       "All notification channels",
       "24/7 dedicated support",
       "API access",
@@ -54,7 +56,7 @@ export function PricingSection() {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple Pricing</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Choose the plan that fits your trading needs. All plans include full signal access.
+            Choose the plan that fits your OKX trading workflow. All plans include full signal access.
           </p>
         </div>
 
@@ -62,16 +64,15 @@ export function PricingSection() {
           {plans.map((plan) => (
             <Card
               key={plan.name}
-              className={`bg-card relative ${plan.popular ? "border-primary shadow-lg scale-105" : ""}`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
-                    Most Popular
-                  </span>
-                </div>
+              className={cn(
+                "h-full bg-card",
+                plan.popular && "border-primary shadow-lg ring-primary/25",
               )}
+            >
               <CardHeader className="text-center">
+                <div className="mb-2 flex min-h-6 justify-center">
+                  {plan.popular ? <Badge>Most Popular</Badge> : null}
+                </div>
                 <CardTitle>{plan.name}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
                 <div className="mt-4">
@@ -79,11 +80,11 @@ export function PricingSection() {
                   <span className="text-muted-foreground">{plan.period}</span>
                 </div>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
+              <CardContent className="flex-1">
+                <ul className="flex flex-col gap-3">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-chart-2" />
+                      <Check className="size-4 text-chart-2" />
                       <span className="text-sm">{feature}</span>
                     </li>
                   ))}

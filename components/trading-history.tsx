@@ -3,12 +3,12 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowUpRight, ArrowDownRight } from "lucide-react"
 
 const recentTrades = [
-  { id: 1, symbol: "EURUSD", type: "BUY", entry: 1.0842, exit: 1.0891, pips: 49, profit: 245.0, time: "2h ago" },
-  { id: 2, symbol: "GBPJPY", type: "SELL", entry: 188.42, exit: 187.89, pips: 53, profit: 318.0, time: "5h ago" },
-  { id: 3, symbol: "XAUUSD", type: "BUY", entry: 2024.5, exit: 2031.2, pips: 67, profit: 402.0, time: "8h ago" },
-  { id: 4, symbol: "USDJPY", type: "SELL", entry: 149.82, exit: 150.15, pips: -33, profit: -165.0, time: "12h ago" },
-  { id: 5, symbol: "EURUSD", type: "BUY", entry: 1.0795, exit: 1.0842, pips: 47, profit: 235.0, time: "1d ago" },
-  { id: 6, symbol: "GBPUSD", type: "SELL", entry: 1.2654, exit: 1.2612, pips: 42, profit: 210.0, time: "1d ago" },
+  { id: 1, symbol: "BTC-USDT", type: "BUY", entry: "64,250.0", exit: "65,180.0", move: 1.45, profit: 245.0, time: "2h ago" },
+  { id: 2, symbol: "SOL-USDT", type: "SELL", entry: "147.80", exit: "142.65", move: 3.48, profit: 318.0, time: "5h ago" },
+  { id: 3, symbol: "ETH-USDT", type: "BUY", entry: "3,120.4", exit: "3,178.9", move: 1.87, profit: 402.0, time: "8h ago" },
+  { id: 4, symbol: "XRP-USDT", type: "SELL", entry: "0.5240", exit: "0.5365", move: -2.39, profit: -165.0, time: "12h ago" },
+  { id: 5, symbol: "BTC-USDT", type: "BUY", entry: "63,780.0", exit: "64,240.0", move: 0.72, profit: 235.0, time: "1d ago" },
+  { id: 6, symbol: "DOGE-USDT", type: "SELL", entry: "0.1580", exit: "0.1515", move: 4.11, profit: 210.0, time: "1d ago" },
 ]
 
 export function TradingHistory() {
@@ -18,7 +18,7 @@ export function TradingHistory() {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Recent Trades</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Transparent trading history. Every trade is recorded and available for verification.
+            Transparent OKX trading history. Every copied crypto trade is recorded and available for verification.
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export function TradingHistory() {
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Type</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Entry</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Exit</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Pips</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Move</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Profit</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Time</th>
                   </tr>
@@ -49,9 +49,9 @@ export function TradingHistory() {
                       <td className="py-3 px-4">
                         <Badge variant={trade.type === "BUY" ? "default" : "secondary"} className="font-mono">
                           {trade.type === "BUY" ? (
-                            <ArrowUpRight className="h-3 w-3 mr-1" />
+                            <ArrowUpRight className="mr-1 size-3" />
                           ) : (
-                            <ArrowDownRight className="h-3 w-3 mr-1" />
+                            <ArrowDownRight className="mr-1 size-3" />
                           )}
                           {trade.type}
                         </Badge>
@@ -59,10 +59,10 @@ export function TradingHistory() {
                       <td className="py-3 px-4 text-right font-mono text-sm">{trade.entry}</td>
                       <td className="py-3 px-4 text-right font-mono text-sm">{trade.exit}</td>
                       <td
-                        className={`py-3 px-4 text-right font-mono text-sm ${trade.pips >= 0 ? "text-chart-2" : "text-destructive"}`}
+                        className={`py-3 px-4 text-right font-mono text-sm ${trade.move >= 0 ? "text-chart-2" : "text-destructive"}`}
                       >
-                        {trade.pips >= 0 ? "+" : ""}
-                        {trade.pips}
+                        {trade.move >= 0 ? "+" : ""}
+                        {trade.move.toFixed(2)}%
                       </td>
                       <td
                         className={`py-3 px-4 text-right font-mono text-sm font-medium ${trade.profit >= 0 ? "text-chart-2" : "text-destructive"}`}
