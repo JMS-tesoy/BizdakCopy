@@ -92,8 +92,8 @@ const stepCardClass = "rounded-lg border border-border bg-card p-5 shadow-sm"
 const inputClass = "h-11 rounded-lg bg-background/60 px-3 text-foreground placeholder:text-muted-foreground"
 const selectClass =
   "onboarding-select h-11 w-full cursor-pointer rounded-lg border border-input bg-popover/80 px-3 text-sm font-medium text-foreground shadow-sm outline-none transition hover:bg-muted/60 focus:border-ring focus:ring-3 focus:ring-ring/50"
-const cardToStepMap = [0, 1, 1, 2, 2, 3, 4, 5]
-const stepToCardMap = [0, 1, 3, 5, 6, 7]
+const cardToStepMap = [0, 1, 2, 3, 4, 5, 6, 7]
+const stepToCardMap = [0, 1, 2, 3, 4, 5, 6, 7]
 const countryGroups = [
   {
     region: "Southeast Asia",
@@ -842,11 +842,21 @@ function OnboardingStepper({
     },
     {
       title: "Risk",
-      description: businessState.riskAccepted && isRiskConfigured ? "Accepted and configured" : "Terms and limits",
-      tone: businessState.riskAccepted && isRiskConfigured ? ("good" as const) : ("warn" as const),
+      description: businessState.riskAccepted ? "Terms accepted" : "Accept terms",
+      tone: businessState.riskAccepted ? ("good" as const) : ("warn" as const),
     },
     {
-      title: "OKX API",
+      title: "Copy config",
+      description: isRiskConfigured ? "Limits configured" : "Review limits",
+      tone: isRiskConfigured ? ("good" as const) : ("warn" as const),
+    },
+    {
+      title: "API guide",
+      description: businessState.apiSubmitted ? "Guide reviewed" : "Setup instructions",
+      tone: businessState.apiSubmitted ? ("good" as const) : ("warn" as const),
+    },
+    {
+      title: "OKX credentials",
       description: businessState.apiSubmitted ? "Credentials submitted" : "Connect credentials",
       tone: businessState.apiSubmitted ? ("good" as const) : ("warn" as const),
     },
