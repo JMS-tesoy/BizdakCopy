@@ -9,14 +9,11 @@ export function HeroSection() {
     <section className="pt-32 pb-20 px-6">
       <div className="container mx-auto">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-accent/50 px-4 py-2 rounded-full mb-6">
-            <div className="size-2 bg-chart-2 rounded-full animate-pulse" />
-            <span className="text-sm text-muted-foreground">OKX-Only Copy Trading</span>
-          </div>
-
           <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-balance mb-6">
-            Copy Professional Crypto
-            <span className="block text-primary">Signals on OKX</span>
+            <span className="text-success">Consistent</span> Profit Growth
+            <span className="block text-primary">
+              Built on Risk-<span className="text-success">Controlled</span> Trading
+            </span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 text-pretty">

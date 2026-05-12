@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart"
 import { Activity, BarChart3, DollarSign, Percent, Target, TrendingUp } from "lucide-react"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ReferenceLine, XAxis, YAxis } from "recharts"
@@ -11,10 +11,13 @@ type MetricPoint = { month: string; value: number }
 type PnlPoint = {
   date: string
   pnl: number
-  pnlPercent: number
   endDate?: string
   label?: string
   detail?: string
+}
+type ProfitLossPoint = PnlPoint & {
+  profit: number
+  losses: number
 }
 type MetricId =
   | "net-pnl"
@@ -27,7 +30,8 @@ type MetricId =
   | "worst-month"
   | "avg-hold"
 type ChartType = "area" | "bar"
-type PnlRange = "daily" | "weekly" | "monthly" | "three-months" | "six-months" | "yearly"
+type PnlRange = "daily" | "weekly" | "monthly" | "three-months" | "six-months"
+type PnlChartKey = "profit" | "losses"
 
 type PerformanceMetric = {
   id: MetricId
@@ -66,14 +70,18 @@ const chartConfig = {
     label: "Value",
     color: "var(--chart-2)",
   },
-  pnl: {
-    label: "PnL",
+  profit: {
+    label: "Profit",
     color: "var(--chart-2)",
+  },
+  losses: {
+    label: "Losses",
+    color: "var(--destructive)",
   },
 } satisfies ChartConfig
 
 function getStateColor(value: number) {
-  if (value > 0) return "var(--chart-2)"
+  if (value > 0) return "color-mix(in oklab, var(--foreground) 48%, transparent)"
   if (value < 0) return "var(--destructive)"
   return "var(--muted-foreground)"
 }
@@ -87,6 +95,11 @@ function getStateTextClass(value: number) {
 function formatSignedValue(value: number, formatter: (value: number) => string) {
   return value > 0 ? `+${formatter(value)}` : formatter(value)
 }
+
+const pnlChartOptions: { id: PnlChartKey; label: string; formatter: (value: number) => string }[] = [
+  { id: "profit", label: "Profit", formatter: dollarFormatter },
+  { id: "losses", label: "Losses", formatter: dollarFormatter },
+]
 
 const performanceMetrics: PerformanceMetric[] = [
   {
@@ -217,13 +230,12 @@ const performanceMetrics: PerformanceMetric[] = [
   },
 ]
 
-const pnlRangeOptions: { id: PnlRange; label: string }[] = [
-  { id: "daily", label: "Daily" },
-  { id: "weekly", label: "Weekly" },
-  { id: "monthly", label: "Monthly" },
-  { id: "three-months", label: "3 Months" },
-  { id: "six-months", label: "6 Months" },
-  { id: "yearly", label: "Yearly" },
+const pnlRangeOptions: { id: PnlRange; label: string; barLabel: string }[] = [
+  { id: "daily", label: "Daily", barLabel: "daily bars" },
+  { id: "weekly", label: "Weekly", barLabel: "weekly bars" },
+  { id: "monthly", label: "Monthly", barLabel: "monthly bars" },
+  { id: "three-months", label: "3 Months", barLabel: "weekly bars" },
+  { id: "six-months", label: "6 Months", barLabel: "weekly bars" },
 ]
 
 const dateMonthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -304,62 +316,31 @@ const weeklyPnlBuckets = makeWeekBuckets(10, 4, 8)
 const monthlyPnlBuckets = makeMonthBuckets(0, 12)
 const threeMonthPnlBuckets = makeWeekBuckets(9, 7, 13)
 const sixMonthPnlBuckets = makeWeekBuckets(6, 1, 26)
-const yearlyPnlBuckets = makeWeekBuckets(0, 1, 52)
 
-const pnlAxisConfig: Record<
-  PnlRange,
-  { ticks: string[]; formatter?: (value: string) => string }
-> = {
+const pnlAxisConfig: Record<PnlRange, { formatter?: (value: string) => string }> = {
   daily: {
-    ticks: [dailyPnlBuckets[0].date, dailyPnlBuckets[2].date, dailyPnlBuckets[4].date, dailyPnlBuckets[6].date],
     formatter: formatIsoDateLabel,
   },
   weekly: {
-    ticks: [weeklyPnlBuckets[0].date, weeklyPnlBuckets[2].date, weeklyPnlBuckets[4].date, weeklyPnlBuckets[7].date],
     formatter: formatIsoDateLabel,
   },
   monthly: {
-    ticks: [monthlyPnlBuckets[0].date, monthlyPnlBuckets[3].date, monthlyPnlBuckets[6].date, monthlyPnlBuckets[9].date, monthlyPnlBuckets[11].date],
     formatter: (value) => {
       const [year, month] = value.split("-").map(Number)
       return dateMonthLabels[new Date(Date.UTC(year, month - 1, 1)).getUTCMonth()]
     },
   },
   "three-months": {
-    ticks: [threeMonthPnlBuckets[0].date, threeMonthPnlBuckets[4].date, threeMonthPnlBuckets[8].date, threeMonthPnlBuckets[12].date],
     formatter: formatIsoDateLabel,
   },
   "six-months": {
-    ticks: [sixMonthPnlBuckets[0].date, sixMonthPnlBuckets[6].date, sixMonthPnlBuckets[12].date, sixMonthPnlBuckets[19].date, sixMonthPnlBuckets[25].date],
     formatter: formatIsoDateLabel,
-  },
-  yearly: {
-    ticks: [
-      yearlyPnlBuckets[0].date,
-      yearlyPnlBuckets[8].date,
-      yearlyPnlBuckets[17].date,
-      yearlyPnlBuckets[26].date,
-      yearlyPnlBuckets[35].date,
-      yearlyPnlBuckets[44].date,
-      yearlyPnlBuckets[51].date,
-    ],
-    formatter: (value) =>
-      ({
-        [yearlyPnlBuckets[0].date]: "Jan",
-        [yearlyPnlBuckets[8].date]: "Mar",
-        [yearlyPnlBuckets[17].date]: "May",
-        [yearlyPnlBuckets[26].date]: "Jul",
-        [yearlyPnlBuckets[35].date]: "Sep",
-        [yearlyPnlBuckets[44].date]: "Nov",
-        [yearlyPnlBuckets[51].date]: "Dec",
-      })[value] ?? value,
   },
 }
 
 function makePnlPoints(
   buckets: { date: string; endDate?: string; label?: string; detail?: string }[],
   pnlValues: number[],
-  percentValues: number[],
 ) {
   return buckets.map((bucket, index) => ({
     date: bucket.date,
@@ -367,7 +348,6 @@ function makePnlPoints(
     label: bucket.label,
     detail: bucket.detail,
     pnl: pnlValues[index],
-    pnlPercent: percentValues[index],
   }))
 }
 
@@ -375,22 +355,18 @@ const pnlRanges: Record<PnlRange, PnlPoint[]> = {
   daily: makePnlPoints(
     dailyPnlBuckets,
     [184, -76, 242, 118, 326, 92, 64],
-    [1.8, -0.7, 2.3, 1.1, 3.0, 0.8, 0.6],
   ),
   weekly: makePnlPoints(
     weeklyPnlBuckets,
     [640, -180, 840, 620, 1030, -260, 1180, 1320],
-    [5.8, -1.4, 7.2, 5.1, 8.4, -1.9, 8.8, 9.5],
   ),
   monthly: makePnlPoints(
     monthlyPnlBuckets,
     [0, 850, 1200, -300, 1200, 1300, 800, 900, -500, 2200, 1400, 4540],
-    [0, 8.5, 11.1, -2.7, 10.8, 10.7, 6.0, 6.3, -3.3, 15.1, 8.3, 24.9],
   ),
   "three-months": makePnlPoints(
     threeMonthPnlBuckets,
     [320, -180, 540, 410, 620, -260, 760, 480, 690, 820, -310, 980, 1120],
-    [2.6, -1.4, 4.3, 3.1, 4.7, -1.9, 5.2, 3.3, 4.6, 5.1, -2.0, 5.8, 6.4],
   ),
   "six-months": makePnlPoints(
     sixMonthPnlBuckets,
@@ -398,33 +374,11 @@ const pnlRanges: Record<PnlRange, PnlPoint[]> = {
       210, 340, -160, 480, 520, 390, -230, 610, 470, 550, 680, -310, 740,
       620, 810, -280, 930, 760, 870, 1020, -420, 1120, 980, 1250, 1180, 1420,
     ],
-    [
-      1.5, 2.4, -1.1, 3.2, 3.5, 2.6, -1.5, 4.0, 3.0, 3.4, 4.1, -1.8,
-      4.3, 3.5, 4.4, -1.4, 4.8, 3.7, 4.1, 4.6, -1.8, 4.9, 4.0, 4.8,
-      4.3, 5.0,
-    ],
-  ),
-  yearly: makePnlPoints(
-    yearlyPnlBuckets,
-    [
-      120, 180, -90, 260, 310, 240, -130, 360, 280, 330, 410, -170, 450,
-      380, 510, -160, 560, 420, 490, 610, -220, 650, 580, 720, 690, 760,
-      -240, 820, 700, 780, 860, -310, 920, 830, 970, 1040, -280, 1120, 980,
-      1160, 1250, -360, 1320, 1190, 1410, 1500, -420, 1580, 1460, 1660, 1740,
-      1890,
-    ],
-    [
-      0.8, 1.2, -0.6, 1.7, 2.0, 1.5, -0.8, 2.2, 1.7, 2.0, 2.4, -0.9,
-      2.5, 2.0, 2.6, -0.8, 2.7, 2.0, 2.2, 2.6, -0.9, 2.7, 2.3, 2.8, 2.6,
-      2.8, -0.8, 2.9, 2.4, 2.6, 2.8, -0.9, 3.0, 2.6, 3.0, 3.1, -0.8,
-      3.2, 2.8, 3.2, 3.3, -0.9, 3.4, 3.0, 3.5, 3.6, -1.0, 3.7, 3.3, 3.8,
-      3.9, 4.1,
-    ],
   ),
 }
 
 const defaultMetricId: MetricId = "max-drawdown"
-const defaultPnlRange: PnlRange = "yearly"
+const defaultPnlRange: PnlRange = "six-months"
 
 function getInitialMetric() {
   return performanceMetrics.find((metric) => metric.id === defaultMetricId) ?? performanceMetrics[0]
@@ -433,15 +387,32 @@ function getInitialMetric() {
 export function PerformanceStats() {
   const [selectedMetricId, setSelectedMetricId] = React.useState<MetricId>(getInitialMetric().id)
   const [selectedPnlRange, setSelectedPnlRange] = React.useState<PnlRange>(defaultPnlRange)
+  const [activePnlChart, setActivePnlChart] = React.useState<PnlChartKey>("profit")
   const selectedMetric =
     performanceMetrics.find((metric) => metric.id === selectedMetricId) ?? getInitialMetric()
   const SelectedIcon = selectedMetric.icon
   const selectedPnlData = pnlRanges[selectedPnlRange]
   const selectedPnlAxis = pnlAxisConfig[selectedPnlRange]
-  const selectedPnlRangeLabel =
-    pnlRangeOptions.find((range) => range.id === selectedPnlRange)?.label ?? "Yearly"
-  const pnlTotal = selectedPnlData.reduce((sum, point) => sum + point.pnl, 0)
-  const pnlPercentTotal = selectedPnlData.reduce((sum, point) => sum + point.pnlPercent, 0)
+  const selectedPnlRangeOption =
+    pnlRangeOptions.find((range) => range.id === selectedPnlRange) ?? pnlRangeOptions[pnlRangeOptions.length - 1]
+  const selectedPnlRangeLabel = selectedPnlRangeOption.label
+  const profitLossData = React.useMemo<ProfitLossPoint[]>(
+    () =>
+      selectedPnlData.map((point) => ({
+        ...point,
+        profit: Math.max(point.pnl, 0),
+        losses: Math.min(point.pnl, 0),
+      })),
+    [selectedPnlData],
+  )
+  const pnlTotals = React.useMemo(
+    () => ({
+      profit: profitLossData.reduce((sum, point) => sum + point.profit, 0),
+      losses: profitLossData.reduce((sum, point) => sum + point.losses, 0),
+    }),
+    [profitLossData],
+  )
+  const activePnlOption = pnlChartOptions.find((option) => option.id === activePnlChart) ?? pnlChartOptions[0]
 
   return (
     <section id="performance" className="section-fade-divider bg-muted/30 px-6 py-20">
@@ -505,31 +476,47 @@ export function PerformanceStats() {
           </CardContent>
         </Card>
 
-        <Card className="mt-6 bg-card">
-          <CardHeader>
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="size-5" aria-hidden="true" />
-                  Sample OKX PnL Bars
-                </CardTitle>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Review demo realized PnL and PnL % by short-term, medium-term, or yearly periods.
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-md border border-border bg-background/60 px-2.5 py-1 text-muted-foreground">
-                    {selectedPnlRangeLabel} summary
-                  </span>
-                  <span className={`rounded-md border border-border bg-background/60 px-2.5 py-1 font-medium ${getStateTextClass(pnlTotal)}`}>
-                    {formatSignedValue(pnlTotal, dollarFormatter)}
-                  </span>
-                  <span className={`rounded-md border border-border bg-background/60 px-2.5 py-1 font-medium ${getStateTextClass(pnlPercentTotal)}`}>
-                    {formatSignedValue(pnlPercentTotal, percentFormatter)}
-                  </span>
-                </div>
-              </div>
+        <Card className="mt-6 bg-card py-0">
+          <CardHeader className="flex flex-col items-stretch border-b p-0 sm:flex-row">
+            <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="size-5" aria-hidden="true" />
+                Sample OKX PnL Bars
+              </CardTitle>
+              <CardDescription>
+                Showing {activePnlOption.label.toLowerCase()} as {selectedPnlRangeOption.barLabel} for the{" "}
+                {selectedPnlRangeLabel.toLowerCase()} view.
+              </CardDescription>
+            </div>
+            <div className="grid grid-cols-2 border-t sm:border-l sm:border-t-0">
+              {pnlChartOptions.map((option) => {
+                const isActive = activePnlChart === option.id
+                const totalValue = pnlTotals[option.id]
 
-              <div className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm sm:grid-cols-3 lg:grid-cols-6">
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    data-active={isActive}
+                    aria-pressed={isActive}
+                    className="relative z-30 flex min-w-[150px] flex-1 flex-col justify-center gap-1 border-l px-6 py-4 text-left first:border-l-0 transition-colors data-[active=true]:bg-muted/50 sm:px-8 sm:py-6"
+                    onClick={() => setActivePnlChart(option.id)}
+                  >
+                    <span className="text-xs text-muted-foreground">{option.label}</span>
+                    <span className={`text-lg font-bold leading-none sm:text-3xl ${getStateTextClass(totalValue)}`}>
+                      {formatSignedValue(totalValue, option.formatter)}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 py-6 sm:p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <span className="w-fit rounded-md border border-border bg-background/60 px-2.5 py-1 text-xs text-muted-foreground">
+                {selectedPnlRangeLabel} · {selectedPnlRangeOption.barLabel}
+              </span>
+              <div className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm sm:grid-cols-3 lg:grid-cols-5">
                 {pnlRangeOptions.map((range) => (
                   <button
                     key={range.id}
@@ -547,42 +534,54 @@ export function PerformanceStats() {
                 ))}
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[280px] w-full">
+            <div className="h-[320px] w-full rounded-xl border border-border bg-foreground/[0.035] p-3 dark:bg-background/35 sm:p-4">
               <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
-                <BarChart accessibilityLayer data={selectedPnlData}>
-                  <CartesianGrid vertical={false} />
+                <BarChart
+                  accessibilityLayer
+                  data={profitLossData}
+                  barCategoryGap="32%"
+                  margin={{
+                    left: 8,
+                    right: 12,
+                    top: 8,
+                    bottom: 24,
+                  }}
+                >
+                  <CartesianGrid vertical={false} strokeOpacity={0.36} />
                   <XAxis
                     dataKey="date"
                     axisLine={false}
                     tickLine={false}
                     interval={0}
-                    minTickGap={16}
-                    ticks={selectedPnlAxis.ticks}
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                    minTickGap={0}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                     tickFormatter={selectedPnlAxis.formatter}
+                    angle={selectedPnlRange === "daily" ? 0 : -35}
+                    textAnchor={selectedPnlRange === "daily" ? "middle" : "end"}
+                    height={52}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                     tickFormatter={compactDollarFormatter}
+                    width={46}
                   />
-                  <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="3 3" />
+                  <ReferenceLine y={0} stroke="var(--border)" strokeOpacity={0.7} />
                   <ChartTooltip
                     cursor={false}
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
-                        const point = payload[0].payload as PnlPoint
+                        const point = payload[0].payload as ProfitLossPoint
+                        const activeValue = point[activePnlChart]
 
                         return (
                           <div className="rounded-lg border border-border bg-popover p-3 shadow-lg">
-                            <p className={`text-sm font-medium ${getStateTextClass(point.pnl)}`}>
-                              {formatSignedValue(point.pnl, dollarFormatter)}
+                            <p className={`text-sm font-medium ${getStateTextClass(activeValue)}`}>
+                              {formatSignedValue(activeValue, activePnlOption.formatter)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {point.detail ?? point.label} · {formatSignedValue(point.pnlPercent, percentFormatter)}
+                              {point.detail ?? point.label} · {activePnlOption.label}
                             </p>
                           </div>
                         )
@@ -590,11 +589,11 @@ export function PerformanceStats() {
                       return null
                     }}
                   />
-                  <Bar dataKey="pnl" radius={6}>
-                    {selectedPnlData.map((point) => (
+                  <Bar dataKey={activePnlChart} fill={`var(--color-${activePnlChart})`} radius={[8, 8, 8, 8]}>
+                    {profitLossData.map((point) => (
                       <Cell
                         key={point.label}
-                        fill={getStateColor(point.pnl)}
+                        fill={getStateColor(point[activePnlChart])}
                       />
                     ))}
                   </Bar>

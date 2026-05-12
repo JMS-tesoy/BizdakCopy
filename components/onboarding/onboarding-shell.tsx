@@ -2036,7 +2036,7 @@ function StatusValueIcon({ value, tone }: { value: string; tone?: "good" | "warn
         <span
           className={cn(
         "flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border",
-        tone === "good" && "bg-emerald-500/10 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
+        tone === "good" && "bg-success/10 text-success ring-success/25",
         tone === "bad" && "bg-destructive/10 text-destructive"
           )}
       aria-hidden="true"
@@ -2057,7 +2057,7 @@ function Dot({ tone, children }: { tone: "good" | "warn" | "bad"; children: Reac
     <span
       className={cn(
         "grid size-[26px] shrink-0 place-items-center rounded-full text-[10px] font-black",
-        tone === "good" && "bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/25 dark:text-emerald-400",
+        tone === "good" && "bg-success/10 text-success ring-1 ring-success/25",
         tone === "warn" && "bg-muted text-foreground",
         tone === "bad" && "bg-destructive/10 text-destructive"
       )}
