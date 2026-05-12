@@ -1,4 +1,5 @@
 import type { Follower } from "./types"
+import { normalizeEmail } from "@/lib/validations/email"
 
 // Demo followers store - replace with database in production
 const followers: Map<string, Follower> = new Map()
@@ -30,10 +31,11 @@ export function validateApiKey(apiKey: string): Follower | null {
 export function createFollower(email: string, tier: "starter" | "pro" | "enterprise"): Follower {
   const maxAccounts = tier === "starter" ? 2 : tier === "pro" ? 5 : 999
   const apiKey = `fbc_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`
+  const normalizedEmail = normalizeEmail(email)
 
   const follower: Follower = {
     id: `follower_${Date.now()}`,
-    email,
+    email: normalizedEmail,
     apiKey,
     subscriptionTier: tier,
     subscriptionStatus: "active",
@@ -48,8 +50,10 @@ export function createFollower(email: string, tier: "starter" | "pro" | "enterpr
 }
 
 export function getFollowerByEmail(email: string): Follower | null {
+  const normalizedEmail = normalizeEmail(email)
+
   for (const follower of followers.values()) {
-    if (follower.email === email) return follower
+    if (normalizeEmail(follower.email) === normalizedEmail) return follower
   }
   return null
 }

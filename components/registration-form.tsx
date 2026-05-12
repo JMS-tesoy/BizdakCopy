@@ -1,14 +1,15 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { registrationSchema, type RegistrationFormValues } from "@/lib/validations/auth"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
 
@@ -20,22 +21,32 @@ const plans = [
 
 export function RegistrationForm() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [plan, setPlan] = useState("pro")
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<RegistrationFormValues>({
+    resolver: zodResolver(registrationSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      plan: "pro",
+    },
+  })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
+  const selectedPlan = watch("plan")
+
+  async function onSubmit(values: RegistrationFormValues) {
     setError("")
 
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, plan }),
+        body: JSON.stringify(values),
       })
 
       const data = await response.json()
@@ -46,57 +57,72 @@ export function RegistrationForm() {
       }
 
       // Store credentials temporarily for checkout flow
-      sessionStorage.setItem("pendingUser", JSON.stringify({ email, plan }))
+      sessionStorage.setItem("pendingUser", JSON.stringify({ email: values.email, plan: values.plan }))
 
       // Redirect to checkout
-      router.push(`/checkout?plan=${plan}`)
+      router.push(`/checkout?plan=${values.plan}`)
     } catch {
       setError("Something went wrong. Please try again.")
-    } finally {
-      setLoading(false)
     }
   }
 
   return (
     <Card>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <CardContent className="pt-6 space-y-4">
           {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg">{error}</div>}
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-invalid={Boolean(errors.email) || undefined}>
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              autoComplete="email"
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              {...register("email")}
             />
+            {errors.email && (
+              <p id="email-error" className="text-sm text-destructive">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2" data-invalid={Boolean(errors.password) || undefined}>
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
               placeholder="Create a strong password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
+              autoComplete="new-password"
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? "password-error" : undefined}
+              {...register("password")}
             />
+            <p className="text-sm text-muted-foreground">
+              Use 8+ characters with uppercase, lowercase, number, and special character.
+            </p>
+            {errors.password && (
+              <p id="password-error" className="text-sm text-destructive">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-3">
             <Label>Select Plan</Label>
-            <RadioGroup value={plan} onValueChange={setPlan}>
+            <RadioGroup
+              value={selectedPlan}
+              onValueChange={(value) => setValue("plan", value as RegistrationFormValues["plan"])}
+            >
               {plans.map((p) => (
                 <label
                   key={p.id}
                   htmlFor={p.id}
                   className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
-                    plan === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                    selectedPlan === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -114,8 +140,8 @@ export function RegistrationForm() {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Continue to Payment
           </Button>
 

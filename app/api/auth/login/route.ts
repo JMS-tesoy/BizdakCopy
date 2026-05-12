@@ -1,18 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getFollowerByEmail } from "@/lib/auth"
+import { loginSchema } from "@/lib/validations/auth"
 import type { ApiResponse, Follower } from "@/lib/types"
 
 export async function POST(request: NextRequest) {
-  const { email, password } = await request.json()
+  const parsedBody = loginSchema.safeParse(await request.json())
 
-  if (!email || !password) {
+  if (!parsedBody.success) {
     const response: ApiResponse<null> = {
       success: false,
-      error: "Email and password are required",
+      error: parsedBody.error.issues[0]?.message ?? "Email and password are required",
       timestamp: new Date().toISOString(),
     }
     return NextResponse.json(response, { status: 400 })
   }
+
+  const { email } = parsedBody.data
 
   // Find user
   const follower = getFollowerByEmail(email)

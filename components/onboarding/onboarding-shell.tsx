@@ -4,11 +4,16 @@ import { useEffect, useRef, useState } from "react"
 import {
   Activity,
   ArrowLeft,
+  BadgeCheck,
+  CheckCircle2,
+  CircleAlert,
   Database,
+  Info,
   KeyRound,
   LayoutDashboard,
   Loader2,
   PauseCircle,
+  Power,
   Save,
   Shield,
   SlidersHorizontal,
@@ -35,50 +40,22 @@ const initialRiskSettings: RiskSettings = {
 }
 
 const initialBusinessState: BusinessState = {
-  accountCreated: true,
-  riskAccepted: true,
+  accountCreated: false,
+  riskAccepted: false,
   planActive: true,
-  apiSubmitted: true,
+  apiSubmitted: false,
   apiVerified: false,
   copyEnabled: false,
-  onboardingStatus: "api_submitted",
+  onboardingStatus: "registered",
 }
 
 const initialTimelineEvents: TimelineEvent[] = [
   {
-    id: "registered",
-    title: "User registered",
-    description: "Profile row created. Copy trading disabled by default.",
-    status: "good",
-    createdAt: "2026-05-11 14:18",
-  },
-  {
-    id: "risk-accepted",
-    title: "Risk accepted",
-    description: "Agreement timestamp saved for audit trail.",
-    status: "good",
-    createdAt: "2026-05-11 14:25",
-  },
-  {
-    id: "risk-saved",
-    title: "Risk settings saved",
-    description: "Trade cap, daily loss, symbols, and slippage limits configured.",
-    status: "good",
-    createdAt: "2026-05-11 14:29",
-  },
-  {
-    id: "api-submitted",
-    title: "API submitted",
-    description: "Secret Key and Passphrase encrypted. Verification pending.",
+    id: "fresh-start",
+    title: "Onboarding opened",
+    description: "Fresh setup session started. Copy trading is OFF and nothing has been configured yet.",
     status: "warn",
-    createdAt: "2026-05-11 14:34",
-  },
-  {
-    id: "withdraw-disabled",
-    title: "Withdraw disabled",
-    description: "The system never requests or uses withdrawal access.",
-    status: "bad",
-    createdAt: "2026-05-11 14:35",
+    createdAt: "current session",
   },
 ]
 
@@ -88,20 +65,89 @@ type ToastState = {
   tone: "good" | "warn" | "bad"
 }
 
+type ProfileState = {
+  displayName: string
+  email: string
+  country: string
+}
+
+type RiskAcknowledgements = {
+  understandsLosses: boolean
+  noWithdrawPermission: boolean
+  canStopAnytime: boolean
+  responsibleForAccount: boolean
+}
+
+type OkxCredentials = {
+  apiKey: string
+  secretKey: string
+  passphrase: string
+  environment: "Demo Trading" | "Live Trading"
+}
+
+type ValidationErrors<T extends string> = Partial<Record<T, string>>
+
 const panelClass = "rounded-lg border border-border bg-card shadow-sm"
 const stepCardClass = "rounded-lg border border-border bg-card p-5 shadow-sm"
 const inputClass = "h-11 rounded-lg bg-background/60 px-3 text-foreground placeholder:text-muted-foreground"
 const selectClass =
-  "h-11 w-full rounded-lg border border-input bg-background/60 px-3 text-sm font-medium text-foreground outline-none transition focus:border-ring focus:ring-3 focus:ring-ring/50"
+  "onboarding-select h-11 w-full cursor-pointer rounded-lg border border-input bg-popover/80 px-3 text-sm font-medium text-foreground shadow-sm outline-none transition hover:bg-muted/60 focus:border-ring focus:ring-3 focus:ring-ring/50"
+const cardToStepMap = [0, 1, 1, 2, 2, 3, 4, 5]
+const stepToCardMap = [0, 1, 3, 5, 6, 7]
+const countryGroups = [
+  {
+    region: "Southeast Asia",
+    countries: ["Philippines", "Singapore", "Malaysia", "Thailand", "Vietnam", "Indonesia"],
+  },
+  {
+    region: "East Asia",
+    countries: ["Japan", "South Korea", "Hong Kong", "Taiwan"],
+  },
+  {
+    region: "West Asia / GCC",
+    countries: ["UAE", "Saudi Arabia", "Qatar", "Kuwait", "Bahrain"],
+  },
+]
 
 export function OnboardingShell() {
+  const [profile, setProfile] = useState<ProfileState>({
+    displayName: "",
+    email: "",
+    country: "",
+  })
+  const [riskAcknowledgements, setRiskAcknowledgements] = useState<RiskAcknowledgements>({
+    understandsLosses: false,
+    noWithdrawPermission: false,
+    canStopAnytime: false,
+    responsibleForAccount: false,
+  })
+  const [okxCredentials, setOkxCredentials] = useState<OkxCredentials>({
+    apiKey: "",
+    secretKey: "",
+    passphrase: "",
+    environment: "Demo Trading",
+  })
+  const [profileErrors, setProfileErrors] = useState<ValidationErrors<keyof ProfileState>>({})
+  const [credentialErrors, setCredentialErrors] = useState<ValidationErrors<keyof OkxCredentials>>({})
   const [riskSettings, setRiskSettings] = useState<RiskSettings>(initialRiskSettings)
   const [businessState, setBusinessState] = useState<BusinessState>(initialBusinessState)
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(initialTimelineEvents)
   const [isRiskModalOpen, setIsRiskModalOpen] = useState(false)
   const [isTestingApi, setIsTestingApi] = useState(false)
   const [toastState, setToastState] = useState<ToastState | null>(null)
+  const [activeOnboardingStep, setActiveOnboardingStep] = useState(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const cardRefs = useRef<Array<HTMLDivElement | null>>([])
+  const riskAcceptedAt = businessState.riskAccepted ? "saved in current session" : "not accepted yet"
+  const apiStorageStatus = businessState.apiSubmitted ? "encrypted payload" : "not submitted"
+  const isRiskConfigured = [
+    "risk_configured",
+    "api_submitted",
+    "api_verified",
+    "ready_to_enable",
+    "active",
+    "copy_paused",
+  ].includes(businessState.onboardingStatus)
 
   const apiStatus = businessState.apiVerified ? "Verified" : "Pending"
   const copyStatus = businessState.copyEnabled ? "ON" : "OFF"
@@ -109,7 +155,9 @@ export function OnboardingShell() {
     ? "Status: onboarding completed. Copy trading is active and protected by risk limits."
     : businessState.apiVerified
       ? "Status: API verified. User must manually enable copy trading."
-      : "Status: API submitted, waiting for verification and activation confirmation."
+      : businessState.apiSubmitted
+        ? "Status: OKX API submitted, waiting for verification and activation confirmation."
+        : "Status: complete profile, risk acknowledgement, and OKX API submission before verification."
   const businessBadge = businessState.copyEnabled
     ? { label: "Active follower", tone: "good" as const }
     : businessState.apiVerified
@@ -119,7 +167,9 @@ export function OnboardingShell() {
     ? { label: "Completed", tone: "good" as const }
     : businessState.apiVerified
       ? { label: "Step 7 of 8", tone: "warn" as const }
-      : { label: "Step 5 of 8", tone: "warn" as const }
+      : businessState.apiSubmitted
+        ? { label: "Step 6 of 8", tone: "warn" as const }
+        : { label: "In progress", tone: "warn" as const }
 
   useEffect(() => {
     if (!toastState) return
@@ -143,11 +193,189 @@ export function OnboardingShell() {
     ])
   }
 
+  function validateProfile(nextProfile: ProfileState) {
+    const errors: ValidationErrors<keyof ProfileState> = {}
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    if (!nextProfile.displayName.trim()) {
+      errors.displayName = "Display name is required."
+    } else if (nextProfile.displayName.trim().length < 2) {
+      errors.displayName = "Use at least 2 characters."
+    }
+
+    if (!nextProfile.email.trim()) {
+      errors.email = "Email is required."
+    } else if (!emailPattern.test(nextProfile.email.trim())) {
+      errors.email = "Enter a valid email address."
+    }
+
+    if (!nextProfile.country.trim()) {
+      errors.country = "Country is required."
+    }
+
+    return errors
+  }
+
+  function validateOkxCredentials(nextCredentials: OkxCredentials) {
+    const errors: ValidationErrors<keyof OkxCredentials> = {}
+
+    if (!nextCredentials.apiKey.trim()) {
+      errors.apiKey = "API Key is required."
+    } else if (nextCredentials.apiKey.trim().length < 8) {
+      errors.apiKey = "API Key looks too short."
+    }
+
+    if (!nextCredentials.secretKey.trim()) {
+      errors.secretKey = "Secret Key is required."
+    } else if (nextCredentials.secretKey.trim().length < 8) {
+      errors.secretKey = "Secret Key looks too short."
+    }
+
+    if (!nextCredentials.passphrase.trim()) {
+      errors.passphrase = "Passphrase is required."
+    } else if (nextCredentials.passphrase.trim().length < 4) {
+      errors.passphrase = "Passphrase looks too short."
+    }
+
+    if (!nextCredentials.environment) {
+      errors.environment = "Choose an environment."
+    }
+
+    return errors
+  }
+
+  function updateProfile(field: keyof ProfileState, value: string) {
+    setProfile((current) => ({ ...current, [field]: value }))
+    setProfileErrors((current) => ({ ...current, [field]: undefined }))
+    if (businessState.accountCreated) {
+      setBusinessState((current) => ({ ...current, accountCreated: false, onboardingStatus: "registered" }))
+    }
+  }
+
+  function saveProfile() {
+    const errors = validateProfile(profile)
+
+    if (Object.keys(errors).length > 0) {
+      setProfileErrors(errors)
+      showToast("Fix the highlighted profile fields before continuing.", "warn", "Profile incomplete")
+      return
+    }
+
+    const nextProfile = {
+      displayName: profile.displayName.trim(),
+      email: profile.email.trim(),
+      country: profile.country.trim(),
+    }
+
+    setProfile(nextProfile)
+    setProfileErrors({})
+    setBusinessState((current) => ({ ...current, accountCreated: true, onboardingStatus: "registered" }))
+    addTimelineEvent({
+      title: "Profile confirmed",
+      description: `${nextProfile.displayName} confirmed account details for onboarding.`,
+      status: "good",
+    })
+    showToast("Profile details confirmed.")
+  }
+
+  function toggleRiskAcknowledgement(field: keyof RiskAcknowledgements) {
+    const next = { ...riskAcknowledgements, [field]: !riskAcknowledgements[field] }
+
+    setRiskAcknowledgements(next)
+    if (businessState.riskAccepted && !next[field]) {
+      setBusinessState((business) => ({
+        ...business,
+        riskAccepted: false,
+        apiSubmitted: false,
+        apiVerified: false,
+        copyEnabled: false,
+        onboardingStatus: "registered",
+      }))
+      showToast("Risk acknowledgement was changed. Accept it again before continuing.", "warn", "Risk reset")
+    }
+  }
+
+  function acceptRiskAcknowledgement() {
+    const accepted = Object.values(riskAcknowledgements).every(Boolean)
+
+    if (!accepted) {
+      showToast("Check every risk acknowledgement before accepting.", "warn", "Risk acknowledgement required")
+      return
+    }
+
+    setBusinessState((business) => ({
+      ...business,
+      riskAccepted: true,
+      onboardingStatus: "risk_accepted",
+    }))
+    addTimelineEvent({
+      title: "Risk acknowledgement accepted",
+      description: "All user risk acknowledgements are checked. Withdrawal permission remains off.",
+      status: "good",
+    })
+    showToast("Risk acknowledgement accepted.")
+  }
+
+  function updateOkxCredential(field: keyof OkxCredentials, value: string) {
+    setOkxCredentials((current) => ({ ...current, [field]: value }))
+    setCredentialErrors((current) => ({ ...current, [field]: undefined }))
+    if (businessState.apiSubmitted || businessState.apiVerified) {
+      setBusinessState((current) => ({
+        ...current,
+        apiSubmitted: false,
+        apiVerified: false,
+        copyEnabled: false,
+        onboardingStatus: "risk_configured",
+      }))
+    }
+  }
+
+  function submitApiCredentials() {
+    if (!businessState.accountCreated) {
+      showToast("Confirm your profile before submitting OKX credentials.", "warn", "Profile required")
+      return
+    }
+
+    if (!businessState.riskAccepted) {
+      showToast("Accept the risk acknowledgement before submitting OKX credentials.", "warn", "Risk required")
+      return
+    }
+
+    const errors = validateOkxCredentials(okxCredentials)
+
+    if (Object.keys(errors).length > 0) {
+      setCredentialErrors(errors)
+      showToast("Fix the highlighted OKX credential fields before continuing.", "warn", "Credentials incomplete")
+      return
+    }
+
+    setOkxCredentials((current) => ({
+      ...current,
+      apiKey: current.apiKey.trim(),
+      secretKey: current.secretKey.trim(),
+      passphrase: current.passphrase.trim(),
+    }))
+    setCredentialErrors({})
+    setBusinessState((current) => ({
+      ...current,
+      apiSubmitted: true,
+      apiVerified: false,
+      copyEnabled: false,
+      onboardingStatus: "api_submitted",
+    }))
+    addTimelineEvent({
+      title: "OKX API credentials submitted",
+      description: "API Key received. Secret Key and Passphrase are treated as encrypted write-only values.",
+      status: "warn",
+    })
+    showToast("OKX credentials submitted for verification.")
+  }
+
   function updateRiskSettings(nextSettings: RiskSettings) {
     setRiskSettings(nextSettings)
     setBusinessState((current) => ({
       ...current,
-      onboardingStatus: current.apiVerified ? current.onboardingStatus : "risk_configured",
+      onboardingStatus: current.apiSubmitted ? current.onboardingStatus : "risk_configured",
     }))
     addTimelineEvent({
       title: "Risk settings updated",
@@ -160,12 +388,27 @@ export function OnboardingShell() {
   function testApiKey() {
     if (isTestingApi) return
 
+    if (!businessState.accountCreated) {
+      showToast("Confirm your profile before testing the OKX API key.", "warn", "Profile required")
+      return
+    }
+
+    if (!businessState.riskAccepted) {
+      showToast("Accept the risk acknowledgement before testing the OKX API key.", "warn", "Risk required")
+      return
+    }
+
+    if (!businessState.apiSubmitted) {
+      addTimelineEvent({
+        title: "API test blocked",
+        description: "User tried to test the OKX API before submitting API Key, Secret Key, and Passphrase.",
+        status: "warn",
+      })
+      showToast("Submit OKX API credentials before testing the key.", "warn", "Credentials required")
+      return
+    }
+
     setIsTestingApi(true)
-    setBusinessState((current) => ({
-      ...current,
-      apiSubmitted: true,
-      onboardingStatus: "api_submitted",
-    }))
     showToast(
       "Simulating OKX API authentication, balance read, trade permission, and IP whitelist check.",
       "warn",
@@ -190,6 +433,16 @@ export function OnboardingShell() {
   }
 
   function enableCopyTrading() {
+    if (!businessState.accountCreated || !businessState.riskAccepted || !businessState.planActive) {
+      addTimelineEvent({
+        title: "Activation blocked",
+        description: "Profile confirmation, risk acknowledgement, and active plan are required before activation.",
+        status: "warn",
+      })
+      showToast("Activation blocked: complete profile, risk, and plan requirements first.", "warn", "Activation blocked")
+      return
+    }
+
     if (!businessState.apiVerified) {
       addTimelineEvent({
         title: "Activation blocked",
@@ -197,16 +450,6 @@ export function OnboardingShell() {
         status: "warn",
       })
       showToast("Activation blocked: test and verify the OKX API key first.", "warn", "Activation blocked")
-      return
-    }
-
-    if (!businessState.planActive || !businessState.riskAccepted) {
-      addTimelineEvent({
-        title: "Activation blocked",
-        description: "Business requirements are incomplete: plan or risk agreement is missing.",
-        status: "warn",
-      })
-      showToast("Activation blocked: complete all business requirements first.", "warn", "Activation blocked")
       return
     }
 
@@ -243,7 +486,19 @@ export function OnboardingShell() {
   }
 
   function saveDraft() {
-    const payload = { businessState, riskSettings, savedAt: new Date().toISOString() }
+    const payload = {
+      businessState,
+      profile,
+      riskAcknowledgements,
+      riskSettings,
+      okxCredentials: {
+        apiKey: okxCredentials.apiKey,
+        secretKey: okxCredentials.secretKey ? "[sensitive]" : "",
+        passphrase: okxCredentials.passphrase ? "[sensitive]" : "",
+        environment: okxCredentials.environment,
+      },
+      savedAt: new Date().toISOString(),
+    }
     window.localStorage.setItem("copytrade_onboarding_draft", JSON.stringify(payload))
     addTimelineEvent({
       title: "Onboarding draft saved",
@@ -255,7 +510,42 @@ export function OnboardingShell() {
 
   function goBack() {
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+    setActiveOnboardingStep(0)
     showToast("Returned to the top of the onboarding workspace.", "warn", "Back")
+  }
+
+  function handleCenterScroll() {
+    const container = scrollRef.current
+    if (!container) return
+
+    const containerTop = container.getBoundingClientRect().top
+    let closestCardIndex = 0
+    let closestDistance = Number.POSITIVE_INFINITY
+
+    cardRefs.current.forEach((card, index) => {
+      if (!card) return
+
+      const distance = Math.abs(card.getBoundingClientRect().top - containerTop - 8)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestCardIndex = index
+      }
+    })
+
+    const nextStep = cardToStepMap[closestCardIndex] ?? 0
+    setActiveOnboardingStep((current) => (current === nextStep ? current : nextStep))
+  }
+
+  function scrollToOnboardingStep(stepIndex: number) {
+    const container = scrollRef.current
+    const card = cardRefs.current[stepToCardMap[stepIndex]]
+    if (!container || !card) return
+
+    setActiveOnboardingStep(stepIndex)
+    container.scrollTo({
+      top: Math.max(card.offsetTop - 8, 0),
+      behavior: "smooth",
+    })
   }
 
   return (
@@ -285,27 +575,68 @@ export function OnboardingShell() {
               />
 
               <section className="grid h-full min-h-0 overflow-hidden gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
-                <OnboardingStepper businessState={businessState} />
+                <OnboardingStepper
+                  businessState={businessState}
+                  activeStep={activeOnboardingStep}
+                  onStepSelect={scrollToOnboardingStep}
+                />
 
                 <div
                   ref={scrollRef}
                   className="grid h-full min-h-0 content-start gap-5 overflow-y-auto overflow-x-hidden overscroll-contain pr-2"
+                  onScroll={handleCenterScroll}
                 >
-                  <BusinessReadinessCard businessState={businessState} />
-                  <AccountProfileCard />
-                  <RiskDisclosureCard />
-                  <RiskSettingsCard riskSettings={riskSettings} />
-                  <OkxApiGuideCard />
-                  <OkxApiCredentialsCard />
-                  <VerificationResultCard businessState={businessState} />
-                  <ActivationCard businessState={businessState} apiStatus={apiStatus} copyStatus={copyStatus} />
-                  <PostOnboardingDashboardCard
-                    apiStatus={apiStatus}
-                    copyStatus={copyStatus}
+                  <div ref={(node) => { cardRefs.current[0] = node }}>
+                    <AccountProfileCard
+                      profile={profile}
+                      isSaved={businessState.accountCreated}
+                      errors={profileErrors}
+                      onChange={updateProfile}
+                      onSave={saveProfile}
+                    />
+                  </div>
+                  <div ref={(node) => { cardRefs.current[1] = node }}>
+                    <RiskDisclosureCard
+                      acknowledgements={riskAcknowledgements}
+                      isAccepted={businessState.riskAccepted}
+                      onToggle={toggleRiskAcknowledgement}
+                      onAccept={acceptRiskAcknowledgement}
+                    />
+                  </div>
+                  <div ref={(node) => { cardRefs.current[2] = node }}>
+                  <RiskSettingsCard
                     riskSettings={riskSettings}
-                    onStopCopyTrading={stopCopyTrading}
+                    isConfigured={isRiskConfigured}
                     onOpenRiskSettings={() => setIsRiskModalOpen(true)}
                   />
+                  </div>
+                  <div ref={(node) => { cardRefs.current[3] = node }}>
+                    <OkxApiGuideCard />
+                  </div>
+                  <div ref={(node) => { cardRefs.current[4] = node }}>
+                    <OkxApiCredentialsCard
+                      credentials={okxCredentials}
+                      isSubmitted={businessState.apiSubmitted}
+                      errors={credentialErrors}
+                      onChange={updateOkxCredential}
+                      onSubmit={submitApiCredentials}
+                    />
+                  </div>
+                  <div ref={(node) => { cardRefs.current[5] = node }}>
+                    <VerificationResultCard businessState={businessState} />
+                  </div>
+                  <div ref={(node) => { cardRefs.current[6] = node }}>
+                    <ActivationCard businessState={businessState} apiStatus={apiStatus} copyStatus={copyStatus} />
+                  </div>
+                  <div ref={(node) => { cardRefs.current[7] = node }}>
+                    <PostOnboardingDashboardCard
+                      apiStatus={apiStatus}
+                      copyStatus={copyStatus}
+                      riskSettings={riskSettings}
+                      onStopCopyTrading={stopCopyTrading}
+                      onOpenRiskSettings={() => setIsRiskModalOpen(true)}
+                    />
+                  </div>
                 </div>
               </section>
             </div>
@@ -322,7 +653,13 @@ export function OnboardingShell() {
         </main>
 
         <aside className="hidden h-screen content-start gap-4 overflow-auto border-l border-border bg-muted/30 p-5 xl:grid">
-          <ConfigurationDatabasePanel businessState={businessState} riskSettings={riskSettings} />
+          <ConfigurationDatabasePanel
+            businessState={businessState}
+            riskSettings={riskSettings}
+            isRiskConfigured={isRiskConfigured}
+            riskAcceptedAt={riskAcceptedAt}
+            apiStorageStatus={apiStorageStatus}
+          />
           <OnboardingTimelinePanel timelineEvents={timelineEvents} />
         </aside>
       </div>
@@ -338,12 +675,6 @@ function OnboardingSidebar() {
     { icon: UserRound, label: "Followers" },
     { icon: Shield, label: "Risk Controls" },
   ]
-  const steps = [
-    { step: "5", label: "API Verification", active: true },
-    { step: "6", label: "Permission Check" },
-    { step: "7", label: "Activation" },
-    { step: "8", label: "Follower Dashboard" },
-  ]
 
   return (
     <aside className="flex h-screen flex-col gap-5 overflow-auto border-r border-border bg-muted/30 p-5 max-md:h-auto">
@@ -353,7 +684,7 @@ function OnboardingSidebar() {
         </div>
         <div>
           <div className="tracking-tight">Bizdak Copy</div>
-          <div className="text-xs font-semibold text-muted-foreground">Operator Desktop</div>
+          <div className="text-xs font-semibold text-muted-foreground">Follower Setup Guide</div>
         </div>
       </div>
 
@@ -363,23 +694,8 @@ function OnboardingSidebar() {
         ))}
       </SidebarSection>
 
-      <SidebarSection title="Onboarding Steps">
-        {steps.map((item) => (
-          <div
-            key={item.label}
-            className={cn(
-              "flex items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-sm font-bold text-muted-foreground",
-              item.active && "border-border bg-background text-foreground shadow-sm"
-            )}
-          >
-            <span className="grid size-6 place-items-center rounded-lg bg-muted text-xs">{item.step}</span>
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </SidebarSection>
-
       <div className="mt-auto rounded-lg border border-border bg-card p-4 shadow-sm">
-        <strong className="mb-2 block text-sm">Business rule</strong>
+        <strong className="mb-2 block text-sm">Before activation</strong>
         <p className="text-xs leading-6 text-muted-foreground">
           API connected does not mean copy trading is active. The user must verify the key and manually enable copying.
         </p>
@@ -431,7 +747,7 @@ function OnboardingTopbar({
   return (
     <header className="flex items-center justify-between gap-4 border-b border-border bg-background/80 px-5 py-4 backdrop-blur md:px-6 max-md:flex-col max-md:items-stretch">
       <div>
-        <h1 className="text-[22px] font-black leading-tight tracking-tight">Follower Onboarding Wizard</h1>
+        <h1 className="text-[22px] font-black leading-tight tracking-tight">Follower Onboarding Guide</h1>
         <p className="mt-1 text-sm text-muted-foreground">{statusCopy}</p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
@@ -455,164 +771,273 @@ function OnboardingStatusPanel({
   businessBadge: { label: string; tone: "good" | "warn" | "blue" }
   businessState: BusinessState
 }) {
-  const activeIndex = businessState.copyEnabled ? 7 : businessState.apiVerified ? 6 : 4
-
   return (
     <section className={cn(panelClass, "grid gap-5 p-5 md:p-6")}>
       <div className="flex items-start justify-between gap-5 max-md:flex-col">
         <div>
           <h2 className="max-w-3xl text-3xl font-black leading-none tracking-tight md:text-[30px]">
-            Safe setup before users follow your OKX trades.
+            Set up your OKX copy trading account safely.
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            This desktop app layout gives your operator/admin a clear workspace: navigation on the left, onboarding
-            logic in the center, and database/audit monitoring on the right.
+            Follow each step to review risk, configure your copy limits, connect a restricted OKX API key, and manually
+            enable copy trading only when you are ready.
           </p>
         </div>
         <StatusBadge tone={businessBadge.tone}>{businessBadge.label}</StatusBadge>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
-        <DashCard label="Plan Status" value="Trial Active" tone="good" />
-        <DashCard label="Terms" value="Accepted" tone="good" />
-        <DashCard label="API Verification" value={apiStatus} tone={businessState.apiVerified ? "good" : "warn"} />
-        <DashCard label="Copy Trading" value={copyStatus} tone={businessState.copyEnabled ? "good" : "warn"} />
+        <DashCard
+          icon={UserRound}
+          label="Profile"
+          value={businessState.accountCreated ? "Confirmed" : "Pending"}
+          tone={businessState.accountCreated ? "good" : "warn"}
+        />
+        <DashCard
+          icon={Shield}
+          label="Risk Terms"
+          value={businessState.riskAccepted ? "Accepted" : "Required"}
+          tone={businessState.riskAccepted ? "good" : "warn"}
+        />
+        <DashCard
+          icon={KeyRound}
+          label="API Verification"
+          value={businessState.apiSubmitted ? apiStatus : "Not submitted"}
+          tone={businessState.apiVerified ? "good" : "warn"}
+        />
+        <DashCard
+          icon={Power}
+          label="Copy Trading"
+          value={copyStatus}
+          tone={businessState.copyEnabled ? "good" : "warn"}
+        />
       </div>
 
-      <div className="grid gap-3">
-        <div className="flex justify-between gap-3 text-xs font-bold text-muted-foreground">
-          <span>Account</span>
-          <span>Risk</span>
-          <span>API</span>
-          <span>Activate</span>
-          <span>Dashboard</span>
-        </div>
-        <div className="grid grid-cols-8 gap-2 max-sm:grid-cols-4" aria-label="onboarding progress">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div
-              key={index}
-              className={cn("h-[7px] rounded-full bg-muted", index <= activeIndex && "bg-primary")}
-            />
-          ))}
-        </div>
-      </div>
     </section>
   )
 }
 
-function OnboardingStepper({ businessState }: { businessState: BusinessState }) {
+function OnboardingStepper({
+  businessState,
+  activeStep,
+  onStepSelect,
+}: {
+  businessState: BusinessState
+  activeStep: number
+  onStepSelect: (stepIndex: number) => void
+}) {
+  const isRiskConfigured = [
+    "risk_configured",
+    "api_submitted",
+    "api_verified",
+    "ready_to_enable",
+    "active",
+    "copy_paused",
+  ].includes(businessState.onboardingStatus)
   const items = [
-    { title: "Profile", description: "Account created", state: "done" },
-    { title: "Risk Terms", description: "Accepted", state: "done" },
-    { title: "Risk Settings", description: "Configured", state: "done" },
+    {
+      title: "Profile",
+      description: businessState.accountCreated ? "Account confirmed" : "Confirm account",
+      tone: businessState.accountCreated ? ("good" as const) : ("warn" as const),
+    },
+    {
+      title: "Risk",
+      description: businessState.riskAccepted && isRiskConfigured ? "Accepted and configured" : "Terms and limits",
+      tone: businessState.riskAccepted && isRiskConfigured ? ("good" as const) : ("warn" as const),
+    },
     {
       title: "OKX API",
+      description: businessState.apiSubmitted ? "Credentials submitted" : "Connect credentials",
+      tone: businessState.apiSubmitted ? ("good" as const) : ("warn" as const),
+    },
+    {
+      title: "Verification",
       description: businessState.apiVerified ? "Verified" : "Verification pending",
-      state: businessState.apiVerified ? "done" : "active",
+      tone: businessState.apiVerified ? ("good" as const) : ("warn" as const),
     },
     {
       title: "Activation",
       description: businessState.copyEnabled ? "Active" : "Manual enable",
-      state: businessState.copyEnabled ? "done" : "active",
+      tone: businessState.copyEnabled ? ("good" as const) : ("warn" as const),
     },
-    { title: "Emergency Stop", description: "Available", state: "done" },
+    {
+      title: "Dashboard",
+      description: businessState.copyEnabled ? "Controls and stop" : "Available after activation",
+      tone: businessState.copyEnabled ? ("good" as const) : ("warn" as const),
+    },
   ]
 
   return (
     <aside className="sticky top-0 rounded-lg border border-border bg-card p-3 shadow-sm max-lg:static">
-      {items.map((item) => (
-        <div
+      {items.map((item, index) => (
+        <button
+          type="button"
           key={item.title}
+          onClick={() => onStepSelect(index)}
           className={cn(
-            "grid grid-cols-[28px_1fr] gap-3 rounded-lg border border-transparent p-3 text-sm text-muted-foreground",
-            item.state === "active" && "border-border bg-muted/50 text-foreground",
-            item.state === "done" && "text-foreground"
+            "grid w-full grid-cols-[28px_1fr] gap-3 rounded-lg border border-transparent p-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/40",
+            item.tone === "good" && "text-foreground",
+            activeStep === index && "border-border bg-muted/50 text-foreground shadow-sm"
           )}
         >
-          <Dot tone={item.state === "done" ? "good" : "warn"}>{item.state === "done" ? "OK" : "!"}</Dot>
+          <Dot tone={item.tone}>{item.tone === "good" ? "OK" : "!"}</Dot>
           <div>
             <strong className="block text-[13px]">{item.title}</strong>
             <span className="mt-0.5 block text-[11px] text-muted-foreground">{item.description}</span>
           </div>
-        </div>
+        </button>
       ))}
     </aside>
   )
 }
 
-function BusinessReadinessCard({ businessState }: { businessState: BusinessState }) {
+function AccountProfileCard({
+  profile,
+  isSaved,
+  errors,
+  onChange,
+  onSave,
+}: {
+  profile: ProfileState
+  isSaved: boolean
+  errors: ValidationErrors<keyof ProfileState>
+  onChange: (field: keyof ProfileState, value: string) => void
+  onSave: () => void
+}) {
   return (
-    <StepCard highlight title="Business readiness checklist" badge={<StatusBadge tone="blue">Control Center</StatusBadge>}>
-      <p className="-mt-3 text-sm leading-6 text-muted-foreground">
-        Standard operating checks before a user is allowed to follow live trades.
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <CheckItem tone="good">User account created</CheckItem>
-        <CheckItem tone="good">Risk agreement accepted</CheckItem>
-        <CheckItem tone="good">Subscription/trial allowed</CheckItem>
-        <CheckItem tone={businessState.apiVerified ? "good" : "warn"}>
-          {businessState.apiVerified ? "OKX API verified" : "OKX API still needs verification"}
-        </CheckItem>
-        <CheckItem tone={businessState.copyEnabled ? "good" : "warn"}>
-          {businessState.copyEnabled ? "Manual activation completed" : "Manual activation still required"}
-        </CheckItem>
-        <CheckItem tone="good">Emergency stop available</CheckItem>
-      </div>
-    </StepCard>
-  )
-}
-
-function AccountProfileCard() {
-  return (
-    <StepCard title="1. Account profile" badge={<StatusBadge tone="good">Completed</StatusBadge>}>
+    <StepCard title="1. Account profile" badge={<StatusBadge tone={isSaved ? "good" : "warn"}>{isSaved ? "Confirmed" : "Action needed"}</StatusBadge>}>
       <p className="-mt-3 text-sm leading-6 text-muted-foreground">
         Collect basic identity and create a follower profile. This is not KYC, just your app-level account setup.
       </p>
+      <CardHint>Confirm your follower account details before continuing.</CardHint>
       <div className="grid gap-3 md:grid-cols-3">
-        <Field label="Display name">
-          <Input className={inputClass} defaultValue="Juan Follower" />
+        <Field label="Display name" error={errors.displayName}>
+          <Input
+            aria-invalid={Boolean(errors.displayName)}
+            className={inputClass}
+            value={profile.displayName}
+            onChange={(event) => onChange("displayName", event.target.value)}
+          />
         </Field>
-        <Field label="Email">
-          <Input className={inputClass} defaultValue="juan@example.com" />
+        <Field label="Email" error={errors.email}>
+          <Input
+            aria-invalid={Boolean(errors.email)}
+            className={inputClass}
+            type="email"
+            value={profile.email}
+            onChange={(event) => onChange("email", event.target.value)}
+          />
         </Field>
-        <Field label="Country">
-          <select className={selectClass} defaultValue="Philippines">
-            <option>Philippines</option>
-            <option>Singapore</option>
-            <option>UAE</option>
+        <Field label="Country" error={errors.country}>
+          <select
+            aria-invalid={Boolean(errors.country)}
+            className={selectClass}
+            value={profile.country}
+            onChange={(event) => onChange("country", event.target.value)}
+          >
+            <option value="">Select your country</option>
+            {countryGroups.map((group) => (
+              <optgroup key={group.region} label={group.region}>
+                {group.countries.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
         </Field>
+      </div>
+      <div className="flex justify-end">
+        <Button type="button" className="h-11" onClick={onSave}>
+          {isSaved ? "Profile Confirmed" : "Confirm Profile"}
+        </Button>
       </div>
     </StepCard>
   )
 }
 
-function RiskDisclosureCard() {
+function RiskDisclosureCard({
+  acknowledgements,
+  isAccepted,
+  onToggle,
+  onAccept,
+}: {
+  acknowledgements: RiskAcknowledgements
+  isAccepted: boolean
+  onToggle: (field: keyof RiskAcknowledgements) => void
+  onAccept: () => void
+}) {
+  const allChecked = Object.values(acknowledgements).every(Boolean)
+
   return (
-    <StepCard danger title="2. Risk acknowledgement" badge={<StatusBadge tone="good">Accepted</StatusBadge>}>
+    <StepCard danger title="2. Risk acknowledgement" badge={<StatusBadge tone={isAccepted ? "good" : "warn"}>{isAccepted ? "Accepted" : "Required"}</StatusBadge>}>
       <p className="-mt-3 text-sm leading-6 text-muted-foreground">
         User must explicitly accept that copy trading can lose money and API keys can execute real trades.
       </p>
+      <CardHint>Read this carefully before connecting an API key or enabling copied trades.</CardHint>
       <Callout tone="bad">
         Copy trading involves financial risk. You are responsible for your OKX account, API permissions, leverage,
         balances, losses, and trading decisions. Never enable withdrawal permission.
       </Callout>
+      <div className="text-sm font-semibold">Required acknowledgements</div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <CheckItem tone="good">I understand trades may lose money.</CheckItem>
-        <CheckItem tone="good">I will not enable withdrawal permission.</CheckItem>
-        <CheckItem tone="good">I can stop copy trading anytime.</CheckItem>
-        <CheckItem tone="good">I am responsible for my OKX account.</CheckItem>
+        <RiskToggle
+          checked={acknowledgements.understandsLosses}
+          onClick={() => onToggle("understandsLosses")}
+        >
+          I understand trades may lose money.
+        </RiskToggle>
+        <RiskToggle
+          checked={acknowledgements.noWithdrawPermission}
+          onClick={() => onToggle("noWithdrawPermission")}
+        >
+          I will not enable withdrawal permission.
+        </RiskToggle>
+        <RiskToggle checked={acknowledgements.canStopAnytime} onClick={() => onToggle("canStopAnytime")}>
+          I can stop copy trading anytime.
+        </RiskToggle>
+        <RiskToggle
+          checked={acknowledgements.responsibleForAccount}
+          onClick={() => onToggle("responsibleForAccount")}
+        >
+          I am responsible for my OKX account.
+        </RiskToggle>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background/60 p-3">
+        <span className="text-sm text-muted-foreground">
+          {isAccepted
+            ? "Risk acknowledgement is saved for this session."
+            : allChecked
+              ? "All items are checked. Confirm your acknowledgement to continue."
+              : "Check all items to enable acceptance."}
+        </span>
+        <Button type="button" className="h-11" disabled={!allChecked || isAccepted} onClick={onAccept}>
+          {isAccepted ? "Risk Accepted" : "Accept Risk Acknowledgement"}
+        </Button>
       </div>
     </StepCard>
   )
 }
 
-function RiskSettingsCard({ riskSettings }: { riskSettings: RiskSettings }) {
+function RiskSettingsCard({
+  riskSettings,
+  isConfigured,
+  onOpenRiskSettings,
+}: {
+  riskSettings: RiskSettings
+  isConfigured: boolean
+  onOpenRiskSettings: () => void
+}) {
   return (
-    <StepCard title="3. Copy trading configuration" badge={<StatusBadge tone="good">Configured</StatusBadge>}>
+    <StepCard
+      title="3. Copy trading configuration"
+      badge={<StatusBadge tone={isConfigured ? "good" : "warn"}>{isConfigured ? "Configured" : "Needs review"}</StatusBadge>}
+    >
       <p className="-mt-3 text-sm leading-6 text-muted-foreground">
         These limits protect the follower before their OKX API key is allowed to execute trades.
       </p>
+      <CardHint>Review your max trade size, daily loss cap, allowed symbols, and slippage limit.</CardHint>
       <div className="grid gap-3 md:grid-cols-4">
         <Field label="Copy mode">
           <select className={selectClass} value={riskSettings.copyMode} aria-readonly onChange={() => undefined}>
@@ -645,6 +1070,12 @@ function RiskSettingsCard({ riskSettings }: { riskSettings: RiskSettings }) {
           <Input className={inputClass} value={`${riskSettings.slippage.toFixed(2)}%`} readOnly />
         </Field>
       </div>
+      <div className="flex justify-end">
+        <Button type="button" variant="outline" className="h-11 bg-transparent" onClick={onOpenRiskSettings}>
+          <SlidersHorizontal data-icon="inline-start" />
+          Update Risk Settings
+        </Button>
+      </div>
     </StepCard>
   )
 }
@@ -655,6 +1086,7 @@ function OkxApiGuideCard() {
       <p className="-mt-3 text-sm leading-6 text-muted-foreground">
         Show this before the API form so users create the key correctly inside OKX.
       </p>
+      <CardHint>Create a restricted OKX API key with Read/View and Trade only.</CardHint>
       <Callout tone="blue">
         Create a restricted OKX API key with Read/View ON and Trade ON. Keep Withdraw OFF. Add our backend server IP to
         your OKX IP whitelist if available.
@@ -682,29 +1114,72 @@ function OkxApiGuideCard() {
   )
 }
 
-function OkxApiCredentialsCard() {
+function OkxApiCredentialsCard({
+  credentials,
+  isSubmitted,
+  errors,
+  onChange,
+  onSubmit,
+}: {
+  credentials: OkxCredentials
+  isSubmitted: boolean
+  errors: ValidationErrors<keyof OkxCredentials>
+  onChange: (field: keyof OkxCredentials, value: string) => void
+  onSubmit: () => void
+}) {
   return (
-    <StepCard title="5. Connect OKX API credentials" badge={<StatusBadge tone="warn">Needs verification</StatusBadge>}>
+    <StepCard title="5. Connect OKX API credentials" badge={<StatusBadge tone={isSubmitted ? "good" : "warn"}>{isSubmitted ? "Submitted" : "Needs submission"}</StatusBadge>}>
       <p className="-mt-3 text-sm leading-6 text-muted-foreground">
         OKX requires API Key, Secret Key, and Passphrase to authenticate and sign trading requests. The frontend sends
         these once through HTTPS.
       </p>
+      <CardHint>Enter API Key, Secret Key, and Passphrase. Never enable Withdraw.</CardHint>
       <div className="grid gap-3 md:grid-cols-2">
-        <Field label="API Key">
-          <Input className={inputClass} placeholder="OKX API Key" defaultValue="abcd-****-****-9821" />
+        <Field label="API Key" error={errors.apiKey}>
+          <Input
+            aria-invalid={Boolean(errors.apiKey)}
+            className={inputClass}
+            placeholder="OKX API Key"
+            value={credentials.apiKey}
+            onChange={(event) => onChange("apiKey", event.target.value)}
+          />
         </Field>
-        <Field label="Passphrase">
-          <Input className={inputClass} type="password" placeholder="Passphrase" defaultValue="hidden-passphrase" />
+        <Field label="Passphrase" error={errors.passphrase}>
+          <Input
+            aria-invalid={Boolean(errors.passphrase)}
+            className={inputClass}
+            type="password"
+            placeholder="Passphrase"
+            value={credentials.passphrase}
+            onChange={(event) => onChange("passphrase", event.target.value)}
+          />
         </Field>
-        <Field label="Secret Key">
-          <Input className={inputClass} type="password" placeholder="Secret Key" defaultValue="hidden-secret-key" />
+        <Field label="Secret Key" error={errors.secretKey}>
+          <Input
+            aria-invalid={Boolean(errors.secretKey)}
+            className={inputClass}
+            type="password"
+            placeholder="Secret Key"
+            value={credentials.secretKey}
+            onChange={(event) => onChange("secretKey", event.target.value)}
+          />
         </Field>
-        <Field label="Environment">
-          <select className={selectClass} defaultValue="Demo Trading">
+        <Field label="Environment" error={errors.environment}>
+          <select
+            aria-invalid={Boolean(errors.environment)}
+            className={selectClass}
+            value={credentials.environment}
+            onChange={(event) => onChange("environment", event.target.value as OkxCredentials["environment"])}
+          >
             <option>Demo Trading</option>
             <option>Live Trading</option>
           </select>
         </Field>
+      </div>
+      <div className="flex justify-end">
+        <Button type="button" className="h-11" onClick={onSubmit}>
+          {isSubmitted ? "Credentials Submitted" : "Submit Credentials"}
+        </Button>
       </div>
       <Callout tone="warn">
         Secret Key and Passphrase should be encrypted and never displayed again after saving. Only allow the user to
@@ -720,6 +1195,7 @@ function VerificationResultCard({ businessState }: { businessState: BusinessStat
       <p className="-mt-3 text-sm leading-6 text-muted-foreground">
         Your backend should run these checks before copy trading can be enabled.
       </p>
+      <CardHint>Test the key first. Verification does not activate copy trading.</CardHint>
       <div className="grid gap-3 sm:grid-cols-2">
         <CheckItem tone={businessState.apiVerified ? "good" : "warn"}>API authentication works</CheckItem>
         <CheckItem tone={businessState.apiVerified ? "good" : "warn"}>Account balance can be read</CheckItem>
@@ -746,15 +1222,16 @@ function ActivationCard({
       <p className="-mt-3 text-sm leading-6 text-muted-foreground">
         This is the final guardrail before the follower account can execute copied trades.
       </p>
+      <CardHint>Copy trading starts only after you manually enable it.</CardHint>
       <Callout tone={businessState.apiVerified ? "good" : "warn"}>
         {businessState.apiVerified
           ? "OKX API verified. Risk limits are configured. Copy trading is ready, but still OFF until the user clicks Enable Copy Trading."
           : "Verify the OKX API before activation. API connected does not mean copy trading is active."}
       </Callout>
       <div className="grid gap-3 md:grid-cols-3">
-        <DashCard label="API Status" value={apiStatus} tone={businessState.apiVerified ? "good" : "warn"} />
-        <DashCard label="Copy Trading" value={copyStatus} tone={businessState.copyEnabled ? "good" : "warn"} />
-        <DashCard label="Mode" value="Demo Trading" />
+        <DashCard icon={KeyRound} label="API Status" value={apiStatus} tone={businessState.apiVerified ? "good" : "warn"} />
+        <DashCard icon={Power} label="Copy Trading" value={copyStatus} tone={businessState.copyEnabled ? "good" : "warn"} />
+        <DashCard icon={BadgeCheck} label="Mode" value="Demo Trading" />
       </div>
     </StepCard>
   )
@@ -778,11 +1255,12 @@ function PostOnboardingDashboardCard({
       <p className="-mt-3 text-sm leading-6 text-muted-foreground">
         After activation, this becomes the main follower control center.
       </p>
+      <CardHint>Monitor status, update risk limits, or stop copying anytime.</CardHint>
       <div className="grid gap-3 md:grid-cols-4">
-        <DashCard label="API Status" value={apiStatus === "Verified" ? "Connected" : "Pending"} tone={apiStatus === "Verified" ? "good" : "warn"} />
-        <DashCard label="Copy Trading" value={copyStatus} tone={copyStatus === "ON" ? "good" : "warn"} />
-        <DashCard label="Max Per Trade" value={`${riskSettings.maxTrade} USDT`} />
-        <DashCard label="Emergency Stop" value="Available" tone="bad" />
+        <DashCard icon={KeyRound} label="API Status" value={apiStatus === "Verified" ? "Connected" : "Pending"} tone={apiStatus === "Verified" ? "good" : "warn"} />
+        <DashCard icon={Power} label="Copy Trading" value={copyStatus} tone={copyStatus === "ON" ? "good" : "warn"} />
+        <DashCard icon={Shield} label="Max Per Trade" value={`${riskSettings.maxTrade} USDT`} />
+        <DashCard icon={PauseCircle} label="Emergency Stop" value="Available" tone="bad" />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <Button type="button" variant="destructive" className="h-11 justify-center" onClick={onStopCopyTrading}>
@@ -806,17 +1284,24 @@ function PostOnboardingDashboardCard({
 function ConfigurationDatabasePanel({
   businessState,
   riskSettings,
+  isRiskConfigured,
+  riskAcceptedAt,
+  apiStorageStatus,
 }: {
   businessState: BusinessState
   riskSettings: RiskSettings
+  isRiskConfigured: boolean
+  riskAcceptedAt: string
+  apiStorageStatus: string
 }) {
   const rows = [
     ["onboarding_status", businessState.onboardingStatus],
-    ["risk_accepted_at", "2026-05-11 14:25"],
+    ["risk_accepted_at", riskAcceptedAt],
     ["copy_enabled", businessState.copyEnabled ? "true - active" : "false before activation"],
-    ["max_trade_usdt", riskSettings.maxTrade.toString()],
-    ["max_daily_loss_usdt", riskSettings.dailyLoss.toString()],
-    ["secret_key_encrypted", "encrypted payload"],
+    ["risk_settings_status", isRiskConfigured ? "configured" : "not configured"],
+    ["max_trade_usdt", isRiskConfigured ? riskSettings.maxTrade.toString() : "not saved"],
+    ["max_daily_loss_usdt", isRiskConfigured ? riskSettings.dailyLoss.toString() : "not saved"],
+    ["secret_key_encrypted", apiStorageStatus],
     ["api_status", businessState.apiVerified ? "verified" : "pending_verification"],
     ["plan_status", "trial_active"],
   ]
@@ -885,6 +1370,7 @@ function RiskSettingsModal({
 }) {
   const [draft, setDraft] = useState<RiskSettings>(riskSettings)
   const [error, setError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<ValidationErrors<keyof RiskSettings>>({})
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -897,6 +1383,7 @@ function RiskSettingsModal({
 
   function setField<K extends keyof RiskSettings>(field: K, value: RiskSettings[K]) {
     setDraft((current) => ({ ...current, [field]: value }))
+    setFieldErrors((current) => ({ ...current, [field]: undefined }))
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -909,28 +1396,61 @@ function RiskSettingsModal({
       maxOpenTrades: Number(draft.maxOpenTrades),
       slippage: Number(draft.slippage),
     }
+    const errors: ValidationErrors<keyof RiskSettings> = {}
+    const okxSymbolPattern = /^[A-Z0-9]+-[A-Z0-9]+$/
+    const allowedSymbols = nextSettings.allowedSymbols
+      .split(",")
+      .map((symbol) => symbol.trim())
+      .filter(Boolean)
 
     if (!nextSettings.allowedSymbols) {
-      setError("Allowed symbols cannot be empty. Add at least one OKX symbol, for example BTC-USDT.")
-      return
+      errors.allowedSymbols = "Allowed symbols cannot be empty."
+    } else if (allowedSymbols.length === 0 || allowedSymbols.some((symbol) => !okxSymbolPattern.test(symbol))) {
+      errors.allowedSymbols = "Use comma-separated OKX symbols like BTC-USDT, ETH-USDT."
+    }
+
+    if (!Number.isFinite(nextSettings.maxTrade) || nextSettings.maxTrade <= 0) {
+      errors.maxTrade = "Max per trade must be greater than zero."
+    } else if (nextSettings.maxTrade > 100000) {
+      errors.maxTrade = "Max per trade cannot exceed 100,000 USDT."
+    }
+
+    if (!Number.isFinite(nextSettings.dailyLoss) || nextSettings.dailyLoss <= 0) {
+      errors.dailyLoss = "Max daily loss must be greater than zero."
+    } else if (nextSettings.dailyLoss > 100000) {
+      errors.dailyLoss = "Max daily loss cannot exceed 100,000 USDT."
+    } else if (nextSettings.dailyLoss < nextSettings.maxTrade) {
+      errors.dailyLoss = "Max daily loss must be greater than or equal to max per trade."
     }
 
     if (
-      nextSettings.maxTrade <= 0 ||
-      nextSettings.dailyLoss <= 0 ||
+      !Number.isFinite(nextSettings.maxOpenTrades) ||
       nextSettings.maxOpenTrades <= 0 ||
-      nextSettings.slippage <= 0
+      !Number.isInteger(nextSettings.maxOpenTrades)
     ) {
-      setError("All numeric risk limits must be greater than zero.")
+      errors.maxOpenTrades = "Max open trades must be a whole number greater than zero."
+    } else if (nextSettings.maxOpenTrades > 50) {
+      errors.maxOpenTrades = "Max open trades cannot exceed 50."
+    }
+
+    if (!Number.isFinite(nextSettings.slippage) || nextSettings.slippage <= 0) {
+      errors.slippage = "Slippage limit must be greater than zero."
+    } else if (nextSettings.slippage > 20) {
+      errors.slippage = "Slippage limit cannot exceed 20%."
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      setError("Fix the highlighted risk settings before saving.")
       return
     }
 
-    if (nextSettings.dailyLoss < nextSettings.maxTrade) {
-      setError("Max daily loss must be greater than or equal to max per trade.")
-      return
-    }
-
-    onSave(nextSettings)
+    setFieldErrors({})
+    setError("")
+    onSave({
+      ...nextSettings,
+      allowedSymbols: allowedSymbols.join(", "),
+    })
     onClose()
   }
 
@@ -973,8 +1493,9 @@ function RiskSettingsModal({
             ) : null}
 
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Copy mode">
+              <Field label="Copy mode" error={fieldErrors.copyMode}>
                 <select
+                  aria-invalid={Boolean(fieldErrors.copyMode)}
                   className={selectClass}
                   value={draft.copyMode}
                   onChange={(event) => setField("copyMode", event.target.value as RiskSettings["copyMode"])}
@@ -985,8 +1506,9 @@ function RiskSettingsModal({
                   <option>Multiplier</option>
                 </select>
               </Field>
-              <Field label="Max per trade, USDT">
+              <Field label="Max per trade, USDT" error={fieldErrors.maxTrade}>
                 <Input
+                  aria-invalid={Boolean(fieldErrors.maxTrade)}
                   className={inputClass}
                   min={1}
                   max={100000}
@@ -997,8 +1519,9 @@ function RiskSettingsModal({
                   required
                 />
               </Field>
-              <Field label="Max daily loss, USDT">
+              <Field label="Max daily loss, USDT" error={fieldErrors.dailyLoss}>
                 <Input
+                  aria-invalid={Boolean(fieldErrors.dailyLoss)}
                   className={inputClass}
                   min={1}
                   max={100000}
@@ -1009,8 +1532,9 @@ function RiskSettingsModal({
                   required
                 />
               </Field>
-              <Field label="Max open trades">
+              <Field label="Max open trades" error={fieldErrors.maxOpenTrades}>
                 <Input
+                  aria-invalid={Boolean(fieldErrors.maxOpenTrades)}
                   className={inputClass}
                   min={1}
                   max={50}
@@ -1024,8 +1548,9 @@ function RiskSettingsModal({
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Allowed market">
+              <Field label="Allowed market" error={fieldErrors.allowedMarket}>
                 <select
+                  aria-invalid={Boolean(fieldErrors.allowedMarket)}
                   className={selectClass}
                   value={draft.allowedMarket}
                   onChange={(event) => setField("allowedMarket", event.target.value as RiskSettings["allowedMarket"])}
@@ -1035,8 +1560,9 @@ function RiskSettingsModal({
                   <option>Futures - later</option>
                 </select>
               </Field>
-              <Field label="Slippage limit, %">
+              <Field label="Slippage limit, %" error={fieldErrors.slippage}>
                 <Input
+                  aria-invalid={Boolean(fieldErrors.slippage)}
                   className={inputClass}
                   min={0.01}
                   max={20}
@@ -1049,8 +1575,9 @@ function RiskSettingsModal({
               </Field>
             </div>
 
-            <Field label="Allowed symbols">
+            <Field label="Allowed symbols" error={fieldErrors.allowedSymbols}>
               <Input
+                aria-invalid={Boolean(fieldErrors.allowedSymbols)}
                 className={inputClass}
                 value={draft.allowedSymbols}
                 onChange={(event) => setField("allowedSymbols", event.target.value)}
@@ -1204,12 +1731,47 @@ function StepCard({
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
-    <label className="grid gap-2">
+    <label className="grid gap-2" data-invalid={Boolean(error) || undefined}>
       <span className="text-[13px] font-black text-foreground">{label}</span>
       {children}
+      {error ? <span className="text-xs leading-5 text-destructive">{error}</span> : null}
     </label>
+  )
+}
+
+function CardHint({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs leading-5 text-muted-foreground">
+      <Info className="mt-0.5 shrink-0" />
+      <span>{children}</span>
+    </div>
+  )
+}
+
+function RiskToggle({
+  checked,
+  onClick,
+  children,
+}: {
+  checked: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={checked}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border border-border bg-background/60 p-3 text-left text-sm leading-5 text-foreground transition-colors hover:bg-muted/40",
+        checked && "border-primary/25 bg-primary/10"
+      )}
+      onClick={onClick}
+    >
+      <Dot tone={checked ? "good" : "warn"}>{checked ? "OK" : "!"}</Dot>
+      <span>{children}</span>
+    </button>
   )
 }
 
@@ -1240,28 +1802,63 @@ function PermissionCard({
 }
 
 function DashCard({
+  icon: Icon,
   label,
   value,
   tone,
 }: {
+  icon?: React.ElementType
   label: string
   value: string
   tone?: "good" | "warn" | "bad"
 }) {
   return (
     <div className="rounded-lg border border-border bg-background/60 p-4">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <strong
-        className={cn(
-          "mt-2 block text-lg",
-          tone === "good" && "text-primary",
-          tone === "warn" && "text-foreground",
-          tone === "bad" && "text-destructive"
-        )}
-      >
-        {value}
-      </strong>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {Icon ? (
+          <span className="flex size-7 items-center justify-center rounded-lg bg-muted text-foreground">
+            <Icon className="size-3.5" />
+          </span>
+        ) : null}
+        <span>{label}</span>
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <strong
+          className={cn(
+            "text-lg",
+            tone === "good" && "text-primary",
+            tone === "warn" && "text-foreground",
+            tone === "bad" && "text-destructive"
+          )}
+        >
+          {value}
+        </strong>
+        <StatusValueIcon value={value} tone={tone} />
+      </div>
     </div>
+  )
+}
+
+function StatusValueIcon({ value, tone }: { value: string; tone?: "good" | "warn" | "bad" }) {
+  const isAttentionState = ["OFF", "Not submitted", "Pending", "Required"].includes(value)
+
+  return (
+        <span
+          className={cn(
+        "flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border",
+        tone === "good" && "bg-emerald-500/10 text-emerald-600 ring-emerald-500/25 dark:text-emerald-400",
+        tone === "bad" && "bg-destructive/10 text-destructive"
+          )}
+      aria-hidden="true"
+    >
+      {tone === "good" ? (
+        <CheckCircle2 className="size-4" />
+      ) : tone === "bad" || isAttentionState ? (
+        <CircleAlert className="size-4" />
+      ) : (
+        <BadgeCheck className="size-4" />
+      )}
+    </span>
   )
 }
 
@@ -1270,7 +1867,7 @@ function Dot({ tone, children }: { tone: "good" | "warn" | "bad"; children: Reac
     <span
       className={cn(
         "grid size-[26px] shrink-0 place-items-center rounded-full text-[10px] font-black",
-        tone === "good" && "bg-primary/10 text-primary",
+        tone === "good" && "bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/25 dark:text-emerald-400",
         tone === "warn" && "bg-muted text-foreground",
         tone === "bad" && "bg-destructive/10 text-destructive"
       )}

@@ -1,18 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createFollower, getFollowerByEmail } from "@/lib/auth"
+import { registrationSchema } from "@/lib/validations/auth"
 import type { ApiResponse } from "@/lib/types"
 
 export async function POST(request: NextRequest) {
-  const { email, password, plan } = await request.json()
+  const parsedBody = registrationSchema.safeParse(await request.json())
 
-  if (!email || !password || !plan) {
+  if (!parsedBody.success) {
     const response: ApiResponse<null> = {
       success: false,
-      error: "Email, password, and plan are required",
+      error: parsedBody.error.issues[0]?.message ?? "Email, password, and plan are required",
       timestamp: new Date().toISOString(),
     }
     return NextResponse.json(response, { status: 400 })
   }
+
+  const { email, plan } = parsedBody.data
 
   // Check if user already exists
   const existing = getFollowerByEmail(email)
