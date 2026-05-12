@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,9 +24,9 @@ export function RegistrationForm() {
   const [error, setError] = useState("")
   const {
     register,
+    control,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -37,7 +37,7 @@ export function RegistrationForm() {
     },
   })
 
-  const selectedPlan = watch("plan")
+  const selectedPlan = useWatch({ control, name: "plan" })
 
   async function onSubmit(values: RegistrationFormValues) {
     setError("")

@@ -23,9 +23,11 @@ import {
   X,
   Zap,
 } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -678,6 +680,7 @@ export function OnboardingShell() {
             apiStorageStatus={apiStorageStatus}
           />
           <OnboardingTimelinePanel timelineEvents={timelineEvents} />
+          <MobileDeviceConnectCard onAcknowledge={() => showToast("Mobile setup reminder acknowledged.")} />
         </aside>
       </div>
     </div>
@@ -1370,6 +1373,76 @@ function OnboardingTimelinePanel({ timelineEvents }: { timelineEvents: TimelineE
         ))}
       </div>
     </section>
+  )
+}
+
+function MobileDeviceConnectCard({ onAcknowledge }: { onAcknowledge: () => void }) {
+  const [connectUrl, setConnectUrl] = useState("")
+  const [qrError, setQrError] = useState("")
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadMobileLink() {
+      try {
+        const response = await fetch("/api/onboarding/mobile-link", { method: "POST" })
+        const data = await response.json()
+
+        if (!isMounted) return
+
+        if (!data.success || !data.data?.connectUrl) {
+          setQrError("QR code is temporarily unavailable.")
+          return
+        }
+
+        setConnectUrl(data.data.connectUrl)
+      } catch {
+        if (isMounted) {
+          setQrError("QR code is temporarily unavailable.")
+        }
+      }
+    }
+
+    loadMobileLink()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  return (
+    <Card className="gap-4 rounded-lg border border-border bg-card py-5 shadow-sm ring-0">
+      <CardContent className="flex justify-center px-5 pt-1">
+        <div className="rounded-xl border border-border/70 bg-white p-4 shadow-sm">
+          {connectUrl ? (
+            <QRCodeSVG
+              value={connectUrl}
+              size={160}
+              bgColor="#ffffff"
+              fgColor="#000000"
+              level="M"
+              marginSize={1}
+              title="Mobile device connection QR code"
+            />
+          ) : (
+            <div className="size-40 rounded-lg bg-muted" aria-hidden="true" />
+          )}
+        </div>
+      </CardContent>
+      <CardHeader className="px-5 text-center">
+        <CardTitle className="text-base font-black tracking-tight">Scan to connect your mobile device</CardTitle>
+        <CardDescription className="text-sm leading-6">
+          Open the Bizdak mobile app and scan this code to link this onboarding setup. This code expires quickly for
+          account safety.
+        </CardDescription>
+        {qrError ? <p className="text-sm text-destructive">{qrError}</p> : null}
+      </CardHeader>
+      <CardFooter className="border-0 bg-transparent px-5 pb-0 pt-0">
+        <Button type="button" variant="secondary" className="h-11 w-full" onClick={onAcknowledge}>
+          Got it
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
 
