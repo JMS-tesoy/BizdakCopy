@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CopyTrade OS - Desktop Onboarding App</title>
+  <style>
+    :root {
+      --bg: #060a12;
+      --shell: #0b111d;
+      --sidebar: #090f19;
+      --panel: #101827;
+      --panel-2: #121d30;
+      --card: #152033;
+      --card-soft: #1a2940;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.14);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --soft: #cbd5e1;
+      --green: #22c55e;
+      --green-soft: rgba(34, 197, 94, 0.14);
+      --yellow: #facc15;
+      --yellow-soft: rgba(250, 204, 21, 0.12);
+      --red: #ef4444;
+      --red-soft: rgba(239, 68, 68, 0.12);
+      --blue: #38bdf8;
+      --blue-soft: rgba(56, 189, 248, 0.14);
+      --purple: #a78bfa;
+      --purple-soft: rgba(167, 139, 250, 0.14);
+      --shadow: 0 24px 90px rgba(0, 0, 0, 0.38);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(56, 189, 248, 0.18), transparent 28%),
+        radial-gradient(circle at 80% 0%, rgba(34, 197, 94, 0.11), transparent 26%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { border: none; cursor: pointer; border-radius: 12px; padding: 11px 15px; font-weight: 850; color: var(--text); background: rgba(255,255,255,0.08); }
+    button:disabled { opacity: 0.65; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, var(--green), var(--blue)); color: #020617; box-shadow: 0 14px 32px rgba(34,197,94,0.23); }
+    .btn-danger { background: var(--red-soft); color: #fecaca; border: 1px solid rgba(239,68,68,0.25); }
+    .btn-ghost { background: rgba(255,255,255,0.045); border: 1px solid var(--border); color: var(--soft); }
+
+    .muted { color: var(--muted); }
+    .soft { color: var(--soft); }
+    .green { color: var(--green); }
+    .yellow { color: var(--yellow); }
+    .red { color: var(--red); }
+    .blue { color: var(--blue); }
+
+    .app-shell {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr) 360px;
+      background: rgba(6, 10, 18, 0.86);
+    }
+
+    .sidebar {
+      height: 100vh;
+      background: linear-gradient(180deg, rgba(9,15,25,0.98), rgba(7,11,18,0.98));
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      padding-bottom: 8px;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #22c55e, #38bdf8);
+      display: grid;
+      place-items: center;
+      color: #020617;
+      font-weight: 950;
+      box-shadow: 0 12px 32px rgba(34, 197, 94, 0.26);
+    }
+
+    .side-section-title {
+      margin: 12px 0 8px;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 900;
+    }
+
+    .nav-list { display: grid; gap: 8px; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      color: var(--soft);
+      border: 1px solid transparent;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 750;
+    }
+    .nav-item.active { background: var(--blue-soft); border-color: rgba(56,189,248,0.22); color: #e0f2fe; }
+    .nav-item span:first-child { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 8px; background: rgba(255,255,255,0.06); }
+
+    .side-card {
+      margin-top: auto;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.035);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .side-card strong { display: block; margin-bottom: 8px; font-size: 14px; }
+    .side-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+
+    .workspace {
+      height: 100vh;
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 76px minmax(0, 1fr) 76px;
+      border-right: 1px solid var(--border);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 17, 29, 0.76);
+      backdrop-filter: blur(16px);
+    }
+
+    .page-title h1 { margin: 0; font-size: 22px; line-height: 1.1; letter-spacing: -0.04em; }
+    .page-title p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+
+    .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .pill.good { color: var(--green); background: var(--green-soft); border-color: rgba(34, 197, 94, 0.24); }
+    .pill.warn { color: var(--yellow); background: var(--yellow-soft); border-color: rgba(250, 204, 21, 0.24); }
+
+    .content-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 22px;
+    }
+
+    .desktop-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .hero-panel,
+    .step-card,
+    .panel,
+    .config-card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.022));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-panel { padding: 22px; display: grid; gap: 18px; }
+    .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+    .hero-top h2 { margin: 0 0 8px; font-size: 30px; line-height: 1.05; letter-spacing: -0.06em; }
+    .hero-top p { margin: 0; max-width: 720px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    .status-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .dash-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 16px; padding: 15px; }
+    .dash-card span { color: var(--muted); font-size: 12px; }
+    .dash-card strong { display: block; margin-top: 8px; font-size: 18px; }
+
+    .progress-wrap { display: grid; gap: 10px; }
+    .progress-labels { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; font-weight: 750; }
+    .progress { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
+    .progress-step { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+    .progress-step.active, .progress-step.done { background: linear-gradient(90deg, var(--green), var(--blue)); }
+
+    .step-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
+
+    .stepper {
+      position: sticky;
+      top: 0;
+      border: 1px solid var(--border);
+      background: rgba(16,24,39,0.75);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .stepper-item {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+    .stepper-item.active { background: var(--blue-soft); border-color: rgba(56,189,248,0.22); color: #dff6ff; }
+    .stepper-item.done { color: #bbf7d0; }
+    .stepper-item strong { display: block; color: inherit; font-size: 13px; }
+    .stepper-item span:last-child { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); }
+
+    .step-stack { display: grid; gap: 18px; }
+    .step-card { padding: 20px; display: grid; gap: 16px; background: var(--card); box-shadow: none; }
+    .step-card.highlight { border-color: rgba(56, 189, 248, 0.25); background: linear-gradient(180deg, rgba(56,189,248,0.08), rgba(21,32,51,1)); }
+    .step-card.danger { border-color: rgba(239, 68, 68, 0.2); background: linear-gradient(180deg, rgba(239,68,68,0.07), rgba(21,32,51,1)); }
+
+    .step-title { display: flex; justify-content: space-between; align-items: start; gap: 14px; }
+    .step-title h3 { margin: 0 0 6px; font-size: 18px; letter-spacing: -0.02em; }
+    .step-title p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+    .badge {
+      white-space: nowrap;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 850;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(255,255,255,0.04);
+    }
+    .badge.good { color: var(--green); background: var(--green-soft); border-color: rgba(34,197,94,0.24); }
+    .badge.warn { color: var(--yellow); background: var(--yellow-soft); border-color: rgba(250,204,21,0.24); }
+    .badge.bad { color: var(--red); background: var(--red-soft); border-color: rgba(239,68,68,0.24); }
+    .badge.blue { color: var(--blue); background: var(--blue-soft); border-color: rgba(56,189,248,0.24); }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+
+    .field { display: grid; gap: 8px; }
+    label { color: #cbd5e1; font-size: 13px; font-weight: 800; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 12px 13px;
+      color: var(--text);
+      background: rgba(2, 6, 23, 0.54);
+      outline: none;
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    input::placeholder, textarea::placeholder { color: #64748b; }
+
+    .notice, .info-box, .danger-box, .success-box {
+      border-radius: 15px;
+      padding: 13px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .notice { border: 1px solid rgba(250,204,21,0.22); background: var(--yellow-soft); color: #fde68a; }
+    .info-box { border: 1px solid rgba(56,189,248,0.24); background: var(--blue-soft); color: #bae6fd; }
+    .danger-box { border: 1px solid rgba(239,68,68,0.24); background: var(--red-soft); color: #fecaca; }
+    .success-box { border: 1px solid rgba(34,197,94,0.24); background: var(--green-soft); color: #bbf7d0; }
+
+    .permissions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .permission { padding: 14px; border-radius: 15px; border: 1px solid var(--border); background: rgba(255,255,255,0.035); font-size: 13px; line-height: 1.5; }
+    .permission strong { display: block; margin-bottom: 5px; }
+    .permission.good strong { color: var(--green); }
+    .permission.bad strong { color: var(--red); }
+
+    .checklist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .check { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.035); border-radius: 13px; padding: 11px; color: #dbeafe; font-size: 13px; line-height: 1.35; }
+    .dot, .num { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 900; flex: 0 0 auto; }
+    .dot.good { background: var(--green-soft); color: var(--green); }
+    .dot.warn { background: var(--yellow-soft); color: var(--yellow); }
+    .dot.bad { background: var(--red-soft); color: var(--red); }
+
+    .ip-box { border: 1px dashed rgba(56,189,248,0.35); background: var(--blue-soft); color: #bae6fd; border-radius: 15px; padding: 13px; display: flex; justify-content: space-between; gap: 14px; align-items: center; font-size: 13px; }
+    .ip-box code { color: #f8fafc; font-weight: 950; }
+
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px; border: 1px solid var(--border); border-radius: 15px; background: rgba(255,255,255,0.035); }
+    .toggle-row strong { display: block; font-size: 14px; }
+    .toggle-row span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .switch { width: 50px; height: 28px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.12); display: flex; justify-content: flex-start; align-items: center; }
+    .switch.on { background: linear-gradient(90deg, var(--green), var(--blue)); justify-content: flex-end; }
+    .knob { width: 20px; height: 20px; border-radius: 999px; background: #fff; }
+
+    .bottom-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 22px;
+      border-top: 1px solid var(--border);
+      background: rgba(11, 17, 29, 0.82);
+      backdrop-filter: blur(16px);
+    }
+    .bottom-actions .left, .bottom-actions .right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .right-panel {
+      height: 100vh;
+      background: linear-gradient(180deg, rgba(9,15,25,0.98), rgba(7,11,18,0.98));
+      padding: 18px;
+      overflow: auto;
+      display: grid;
+      align-content: start;
+      gap: 16px;
+    }
+    .panel { padding: 18px; box-shadow: none; background: rgba(255,255,255,0.035); }
+    .panel h2 { margin: 0 0 6px; font-size: 18px; letter-spacing: -0.035em; }
+    .panel p { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+    .table { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .row { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 10px; padding: 12px; border-bottom: 1px solid var(--border); font-size: 12px; align-items: center; }
+    .row:last-child { border-bottom: none; }
+    .row.header { color: var(--muted); background: rgba(255,255,255,0.035); font-weight: 850; }
+    .row .status-cell { grid-column: 1 / -1; }
+
+    .timeline { display: grid; gap: 10px; max-height: 460px; overflow: auto; padding-right: 4px; }
+    .timeline-item { display: grid; grid-template-columns: 30px 1fr; gap: 9px; }
+    .timeline-item div:last-child { border: 1px solid var(--border); border-radius: 14px; padding: 11px; background: rgba(255,255,255,0.035); }
+    .timeline-item strong { display: block; font-size: 13px; margin-bottom: 3px; }
+    .timeline-item span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(2, 6, 23, 0.72); backdrop-filter: blur(10px); }
+    .modal-backdrop.show { display: flex; }
+    .modal { width: min(720px, 100%); border: 1px solid var(--border-strong); background: linear-gradient(180deg, #111b2d, #0d1422); border-radius: 24px; box-shadow: 0 30px 100px rgba(0, 0, 0, 0.55); overflow: hidden; }
+    .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 22px; border-bottom: 1px solid var(--border); }
+    .modal-header h2 { margin: 0 0 5px; font-size: 22px; letter-spacing: -0.035em; }
+    .modal-header p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .modal-body { padding: 22px; display: grid; gap: 16px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; padding: 0 22px 22px; flex-wrap: wrap; }
+    .icon-button { width: 38px; height: 38px; display: grid; place-items: center; padding: 0; border-radius: 12px; font-size: 20px; line-height: 1; }
+    .error-text { display: none; color: #fecaca; background: var(--red-soft); border: 1px solid rgba(239,68,68,0.24); border-radius: 14px; padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+    .error-text.show { display: block; }
+    .toast { position: fixed; right: 18px; bottom: 88px; z-index: 60; display: none; width: min(380px, calc(100% - 36px)); border: 1px solid rgba(34,197,94,0.26); background: linear-gradient(180deg, rgba(34,197,94,0.18), rgba(17,24,39,0.96)); color: #dcfce7; border-radius: 18px; padding: 14px 16px; box-shadow: 0 24px 80px rgba(0,0,0,0.42); font-size: 14px; line-height: 1.5; }
+    .toast.show { display: block; }
+    .toast strong { display: block; color: var(--green); margin-bottom: 3px; }
+
+    @media (max-width: 1280px) {
+      .app-shell { grid-template-columns: 250px minmax(0, 1fr); }
+      .right-panel { display: none; }
+      .workspace { border-right: none; }
+    }
+
+    @media (max-width: 980px) {
+      body { height: auto; overflow: auto; }
+      .app-shell { height: auto; min-height: 100vh; grid-template-columns: 1fr; }
+      .sidebar { height: auto; position: static; }
+      .workspace { height: auto; grid-template-rows: auto auto auto; }
+      .content-scroll { overflow: visible; }
+      .step-layout { grid-template-columns: 1fr; }
+      .stepper { position: static; }
+      .status-strip, .grid-4, .grid-3, .permissions { grid-template-columns: 1fr; }
+      .bottom-actions { align-items: stretch; flex-direction: column; }
+      .bottom-actions .left, .bottom-actions .right { width: 100%; justify-content: stretch; }
+      .bottom-actions button { flex: 1; }
+    }
+
+    @media (max-width: 680px) {
+      .grid-2, .checklist { grid-template-columns: 1fr; }
+      .topbar, .hero-top { align-items: stretch; flex-direction: column; }
+      .progress { grid-template-columns: repeat(4, 1fr); }
+      .ip-box { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="modal-backdrop" id="riskModal" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="riskModalTitle">
+      <div class="modal-header">
+        <div>
+          <h2 id="riskModalTitle">Update Risk Settings</h2>
+          <p>Change the follower's copy limits. Saving updates the dashboard preview, database preview, and event timeline.</p>
+        </div>
+        <button class="icon-button" id="closeRiskModalBtn" type="button" aria-label="Close modal">×</button>
+      </div>
+
+      <form id="riskSettingsForm">
+        <div class="modal-body">
+          <div class="error-text" id="riskError"></div>
+          <div class="grid-2">
+            <div class="field"><label for="modalCopyMode">Copy mode</label><select id="modalCopyMode" required><option value="Fixed USDT per trade">Fixed USDT per trade</option><option value="Equity percentage">Equity percentage</option><option value="Multiplier">Multiplier</option></select></div>
+            <div class="field"><label for="modalMaxTrade">Max per trade, USDT</label><input id="modalMaxTrade" type="number" min="1" max="100000" step="1" value="10" required /></div>
+            <div class="field"><label for="modalDailyLoss">Max daily loss, USDT</label><input id="modalDailyLoss" type="number" min="1" max="100000" step="1" value="50" required /></div>
+            <div class="field"><label for="modalMaxOpenTrades">Max open trades</label><input id="modalMaxOpenTrades" type="number" min="1" max="50" step="1" value="3" required /></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label for="modalAllowedMarket">Allowed market</label><select id="modalAllowedMarket" required><option value="Spot only">Spot only</option><option value="Futures - later">Futures - later</option></select></div>
+            <div class="field"><label for="modalSlippage">Slippage limit, %</label><input id="modalSlippage" type="number" min="0.01" max="20" step="0.01" value="0.50" required /></div>
+          </div>
+          <div class="field"><label for="modalAllowedSymbols">Allowed symbols</label><input id="modalAllowedSymbols" value="BTC-USDT, ETH-USDT, SOL-USDT" required /></div>
+          <div class="notice">Validation rule in this preview: daily loss must be greater than or equal to max per trade, and all numeric limits must be positive.</div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="cancelRiskModalBtn">Cancel</button>
+          <button type="submit" class="btn-primary">Save Risk Settings</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"><strong>Risk settings updated</strong><span id="toastMessage">New limits saved successfully.</span></div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">CT</div>
+        <div>
+          <div>CopyTrade OS</div>
+          <div class="muted" style="font-size:12px;font-weight:650;">Operator Desktop</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="side-section-title">Workspace</div>
+        <div class="nav-list">
+          <div class="nav-item active"><span>◎</span><span>Follower Onboarding</span></div>
+          <div class="nav-item"><span>▣</span><span>Copy Dashboard</span></div>
+          <div class="nav-item"><span>◈</span><span>Master Trades</span></div>
+          <div class="nav-item"><span>◇</span><span>Followers</span></div>
+          <div class="nav-item"><span>⚙</span><span>Risk Controls</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="side-section-title">Onboarding Steps</div>
+        <div class="nav-list">
+          <div class="nav-item active"><span>5</span><span>API Verification</span></div>
+          <div class="nav-item"><span>6</span><span>Permission Check</span></div>
+          <div class="nav-item"><span>7</span><span>Activation</span></div>
+          <div class="nav-item"><span>8</span><span>Follower Dashboard</span></div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <strong>Business rule</strong>
+        <p>API connected does not mean copy trading is active. The user must verify the key and manually enable copying.</p>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="page-title">
+          <h1>Follower Onboarding Wizard</h1>
+          <p id="wizardStatusText">Status: API submitted, waiting for verification and activation confirmation.</p>
+        </div>
+        <div class="top-actions">
+          <span class="pill">Demo UI Preview</span>
+          <span class="pill good">Read + Trade Only</span>
+          <span class="pill warn">Withdraw Always Off</span>
+          <span class="badge warn" id="wizardStepBadge">Step 5 of 8</span>
+        </div>
+      </header>
+
+      <section class="content-scroll">
+        <div class="desktop-grid">
+          <section class="hero-panel">
+            <div class="hero-top">
+              <div>
+                <h2>Safe setup before users follow your OKX trades.</h2>
+                <p>This desktop app layout gives your operator/admin a clear workspace: navigation on the left, onboarding logic in the center, and database/audit monitoring on the right.</p>
+              </div>
+              <span class="badge blue" id="businessStatusBadge">Pre-activation</span>
+            </div>
+            <div class="status-strip">
+              <div class="dash-card"><span>Plan Status</span><strong class="green" id="planStatusText">Trial Active</strong></div>
+              <div class="dash-card"><span>Terms</span><strong class="green" id="termsStatusText">Accepted</strong></div>
+              <div class="dash-card"><span>API Verification</span><strong class="yellow" id="apiVerificationText">Pending</strong></div>
+              <div class="dash-card"><span>Copy Trading</span><strong class="yellow copy-status-text">OFF</strong></div>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-labels"><span>Account</span><span>Risk</span><span>API</span><span>Activate</span><span>Dashboard</span></div>
+              <div class="progress" aria-label="onboarding progress"><div class="progress-step done"></div><div class="progress-step done"></div><div class="progress-step done"></div><div class="progress-step done"></div><div class="progress-step active"></div><div class="progress-step"></div><div class="progress-step"></div><div class="progress-step"></div></div>
+            </div>
+          </section>
+
+          <section class="step-layout">
+            <aside class="stepper">
+              <div class="stepper-item done"><span class="dot good">✓</span><div><strong>Profile</strong><span>Account created</span></div></div>
+              <div class="stepper-item done"><span class="dot good">✓</span><div><strong>Risk Terms</strong><span>Accepted</span></div></div>
+              <div class="stepper-item done"><span class="dot good">✓</span><div><strong>Risk Settings</strong><span>Configured</span></div></div>
+              <div class="stepper-item active"><span class="dot warn" id="businessApiDot">!</span><div><strong>OKX API</strong><span>Verification pending</span></div></div>
+              <div class="stepper-item"><span class="dot warn" id="businessActivationDot">!</span><div><strong>Activation</strong><span>Manual enable</span></div></div>
+              <div class="stepper-item"><span class="dot good">✓</span><div><strong>Emergency Stop</strong><span>Available</span></div></div>
+            </aside>
+
+            <div class="step-stack">
+              <article class="step-card highlight">
+                <div class="step-title"><div><h3>Business readiness checklist</h3><p>Standard operating checks before a user is allowed to follow live trades.</p></div><span class="badge blue">Control Center</span></div>
+                <div class="checklist">
+                  <div class="check"><span class="dot good">✓</span>User account created</div>
+                  <div class="check"><span class="dot good">✓</span>Risk agreement accepted</div>
+                  <div class="check"><span class="dot good">✓</span>Subscription/trial allowed</div>
+                  <div class="check"><span class="dot warn">!</span>OKX API still needs verification</div>
+                  <div class="check"><span class="dot warn">!</span>Manual activation still required</div>
+                  <div class="check"><span class="dot good">✓</span>Emergency stop available</div>
+                </div>
+              </article>
+
+              <article class="step-card">
+                <div class="step-title"><div><h3>1. Account profile</h3><p>Collect basic identity and create a follower profile. This is not KYC, just your app-level account setup.</p></div><span class="badge good">Completed</span></div>
+                <div class="grid-3"><div class="field"><label>Display name</label><input value="Juan Follower" /></div><div class="field"><label>Email</label><input value="juan@example.com" /></div><div class="field"><label>Country</label><select><option>Philippines</option><option>Singapore</option><option>UAE</option></select></div></div>
+              </article>
+
+              <article class="step-card danger">
+                <div class="step-title"><div><h3>2. Risk acknowledgement</h3><p>User must explicitly accept that copy trading can lose money and API keys can execute real trades.</p></div><span class="badge good">Accepted</span></div>
+                <div class="danger-box">Copy trading involves financial risk. You are responsible for your OKX account, API permissions, leverage, balances, losses, and trading decisions. Never enable withdrawal permission.</div>
+                <div class="checklist"><div class="check"><span class="dot good">✓</span>I understand trades may lose money.</div><div class="check"><span class="dot good">✓</span>I will not enable withdrawal permission.</div><div class="check"><span class="dot good">✓</span>I can stop copy trading anytime.</div><div class="check"><span class="dot good">✓</span>I am responsible for my OKX account.</div></div>
+              </article>
+
+              <article class="step-card">
+                <div class="step-title"><div><h3>3. Copy trading configuration</h3><p>These limits protect the follower before their OKX API key is allowed to execute trades.</p></div><span class="badge good">Configured</span></div>
+                <div class="grid-4"><div class="field"><label>Copy mode</label><select><option>Fixed USDT per trade</option><option>Equity percentage</option><option>Multiplier</option></select></div><div class="field"><label>Fixed amount</label><input value="10 USDT" /></div><div class="field"><label>Max daily loss</label><input value="50 USDT" /></div><div class="field"><label>Max open trades</label><input value="3" /></div></div>
+                <div class="grid-3"><div class="field"><label>Allowed market</label><select><option>Spot only</option><option>Futures - later</option></select></div><div class="field"><label>Allowed symbols</label><input value="BTC-USDT, ETH-USDT, SOL-USDT" /></div><div class="field"><label>Slippage limit</label><input value="0.50%" /></div></div>
+              </article>
+
+              <article class="step-card highlight">
+                <div class="step-title"><div><h3>4. OKX API setup instructions</h3><p>Show this before the API form so users create the key correctly inside OKX.</p></div><span class="badge blue">Guide</span></div>
+                <div class="permissions"><div class="permission good"><strong>Read / View: ON</strong>Required to check balance, orders, positions, and account status.</div><div class="permission good"><strong>Trade: ON</strong>Required to copy trades to the follower account.</div><div class="permission bad"><strong>Withdraw: OFF</strong>Must never be enabled. Your app should reject this setup.</div></div>
+                <div class="ip-box"><span>Whitelist this backend server IP in OKX API settings:</span><code>123.45.67.89</code></div>
+                <div class="info-box">Recommended: create a separate OKX sub-account for copy trading, fund it with a small test balance, then create the API key from that sub-account.</div>
+              </article>
+
+              <article class="step-card">
+                <div class="step-title"><div><h3>5. Connect OKX API credentials</h3><p>The frontend sends these once through HTTPS. Your backend encrypts Secret Key and Passphrase before storage.</p></div><span class="badge warn">Needs verification</span></div>
+                <div class="grid-2"><div class="field"><label>API Key</label><input placeholder="OKX API Key" value="abcd-****-****-9821" /></div><div class="field"><label>Passphrase</label><input type="password" placeholder="Passphrase" value="password" /></div><div class="field"><label>Secret Key</label><input type="password" placeholder="Secret Key" value="secretkeyhidden" /></div><div class="field"><label>Environment</label><select><option>Demo Trading</option><option>Live Trading</option></select></div></div>
+                <div class="notice">Do not display Secret Key again after saving. Only allow the user to replace or delete the connection.</div>
+              </article>
+
+              <article class="step-card">
+                <div class="step-title"><div><h3>6. Backend verification result</h3><p>Your backend should run these checks before copy trading can be enabled.</p></div><span class="badge blue">Auto-check</span></div>
+                <div class="checklist"><div class="check"><span class="dot good">✓</span>API authentication works</div><div class="check"><span class="dot good">✓</span>Account balance can be read</div><div class="check"><span class="dot good">✓</span>Trade permission detected</div><div class="check"><span class="dot good">✓</span>Server IP whitelist works</div><div class="check"><span class="dot warn">!</span>Copy trading still OFF by default</div><div class="check"><span class="dot bad">×</span>Withdraw permission not requested</div></div>
+              </article>
+
+              <article class="step-card highlight">
+                <div class="step-title"><div><h3>7. Final activation confirmation</h3><p>This is the final guardrail before the follower account can execute copied trades.</p></div><span class="badge warn">Manual action</span></div>
+                <div class="success-box">OKX API verified. Risk limits are configured. Copy trading is ready, but still OFF until the user clicks Enable Copy Trading.</div>
+                <div class="grid-3"><div class="dash-card"><span>API Status</span><strong class="yellow" id="activationApiStatus">Pending</strong></div><div class="dash-card"><span>Copy Trading</span><strong class="yellow copy-status-text">OFF</strong></div><div class="dash-card"><span>Mode</span><strong>Demo Trading</strong></div></div>
+              </article>
+
+              <article class="step-card">
+                <div class="step-title"><div><h3>8. Post-onboarding dashboard</h3><p>After activation, this becomes the main follower control center.</p></div><span class="badge good">Ready</span></div>
+                <div class="status-strip"><div class="dash-card"><span>API Status</span><strong class="yellow" id="dashboardApiStatus">Pending</strong></div><div class="dash-card"><span>Copy Trading</span><strong class="yellow copy-status-text">OFF</strong></div><div class="dash-card"><span>Max Per Trade</span><strong class="risk-max-trade">10 USDT</strong></div><div class="dash-card"><span>Emergency Stop</span><strong class="red">Available</strong></div></div>
+                <div class="grid-2"><button class="btn-danger" id="stopCopyTradingBtn" type="button">Stop Copy Trading</button><button id="updateRiskSettingsBtn" type="button">Update Risk Settings</button></div>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <footer class="bottom-actions">
+        <div class="left"><button id="backStepBtn" type="button" class="btn-ghost">Back</button><button id="saveDraftBtn" type="button" class="btn-ghost">Save Draft</button></div>
+        <div class="right"><button id="testApiKeyBtn" type="button">Test API Key</button><button class="btn-primary" id="enableCopyTradingBtn" type="button">Enable Copy Trading</button></div>
+      </footer>
+    </main>
+
+    <aside class="right-panel">
+      <section class="panel">
+        <h2>Configuration Database</h2>
+        <p>Suggested fields to track onboarding state and follower risk controls.</p>
+        <div class="table">
+          <div class="row header"><div>Field</div><div>Value</div></div>
+          <div class="row"><div>onboarding_status</div><div id="dbOnboardingStatus">api_submitted</div></div>
+          <div class="row"><div>risk_accepted_at</div><div>2026-05-11 14:25</div></div>
+          <div class="row"><div>copy_enabled</div><div id="dbCopyEnabled">false before activation</div></div>
+          <div class="row"><div>max_trade_usdt</div><div id="dbMaxTrade">10</div></div>
+          <div class="row"><div>max_daily_loss_usdt</div><div id="dbDailyLoss">50</div></div>
+          <div class="row"><div>secret_key_encrypted</div><div>encrypted payload</div></div>
+          <div class="row"><div>api_status</div><div id="dbApiStatus">pending_verification</div></div>
+          <div class="row"><div>plan_status</div><div>trial_active</div></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>System Event Timeline</h2>
+        <p>Backend-style audit log for onboarding activity.</p>
+        <div class="timeline">
+          <div class="timeline-item"><span class="dot good">✓</span><div><strong>User registered</strong><span>Profile row created. Copy trading disabled by default.</span></div></div>
+          <div class="timeline-item"><span class="dot good">✓</span><div><strong>Risk accepted</strong><span>Agreement timestamp saved for audit trail.</span></div></div>
+          <div class="timeline-item"><span class="dot good">✓</span><div><strong>Risk settings saved</strong><span>Trade cap, daily loss, symbols, and slippage limits configured.</span></div></div>
+          <div class="timeline-item"><span class="dot warn">!</span><div><strong>API submitted</strong><span>Secret Key and Passphrase encrypted. Verification pending.</span></div></div>
+          <div class="timeline-item"><span class="dot bad">×</span><div><strong>Withdraw disabled</strong><span>The system should never request or use withdrawal access.</span></div></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    const riskModal = document.getElementById('riskModal');
+    const updateRiskSettingsBtn = document.getElementById('updateRiskSettingsBtn');
+    const testApiKeyBtn = document.getElementById('testApiKeyBtn');
+    const enableCopyTradingBtn = document.getElementById('enableCopyTradingBtn');
+    const stopCopyTradingBtn = document.getElementById('stopCopyTradingBtn');
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    const backStepBtn = document.getElementById('backStepBtn');
+    const closeRiskModalBtn = document.getElementById('closeRiskModalBtn');
+    const cancelRiskModalBtn = document.getElementById('cancelRiskModalBtn');
+    const riskSettingsForm = document.getElementById('riskSettingsForm');
+    const riskError = document.getElementById('riskError');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+
+    const fields = {
+      copyMode: document.getElementById('modalCopyMode'),
+      maxTrade: document.getElementById('modalMaxTrade'),
+      dailyLoss: document.getElementById('modalDailyLoss'),
+      maxOpenTrades: document.getElementById('modalMaxOpenTrades'),
+      allowedMarket: document.getElementById('modalAllowedMarket'),
+      slippage: document.getElementById('modalSlippage'),
+      allowedSymbols: document.getElementById('modalAllowedSymbols'),
+    };
+
+    let riskSettings = {
+      copyMode: 'Fixed USDT per trade',
+      maxTrade: 10,
+      dailyLoss: 50,
+      maxOpenTrades: 3,
+      allowedMarket: 'Spot only',
+      slippage: 0.50,
+      allowedSymbols: 'BTC-USDT, ETH-USDT, SOL-USDT',
+    };
+
+    const businessState = {
+      accountCreated: true,
+      riskAccepted: true,
+      planActive: true,
+      apiSubmitted: true,
+      apiVerified: false,
+      copyEnabled: false,
+      onboardingStatus: 'api_submitted',
+    };
+
+    function openRiskModal() {
+      fields.copyMode.value = riskSettings.copyMode;
+      fields.maxTrade.value = riskSettings.maxTrade;
+      fields.dailyLoss.value = riskSettings.dailyLoss;
+      fields.maxOpenTrades.value = riskSettings.maxOpenTrades;
+      fields.allowedMarket.value = riskSettings.allowedMarket;
+      fields.slippage.value = riskSettings.slippage.toFixed(2);
+      fields.allowedSymbols.value = riskSettings.allowedSymbols;
+      riskError.classList.remove('show');
+      riskError.textContent = '';
+      riskModal.classList.add('show');
+      riskModal.setAttribute('aria-hidden', 'false');
+      fields.maxTrade.focus();
+    }
+
+    function closeRiskModal() {
+      riskModal.classList.remove('show');
+      riskModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function showToast(message) {
+      toastMessage.textContent = message;
+      toast.classList.add('show');
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    function showError(message) {
+      riskError.textContent = message;
+      riskError.classList.add('show');
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function setBadge(id, text, className) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = `badge ${className}`;
+    }
+
+    function setStrongStatus(id, text, className) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = className;
+    }
+
+    function setCopyStatus(enabled) {
+      document.querySelectorAll('.copy-status-text').forEach((el) => {
+        el.textContent = enabled ? 'ON' : 'OFF';
+        el.className = enabled ? 'green copy-status-text' : 'yellow copy-status-text';
+      });
+      setText('dbCopyEnabled', enabled ? 'true - active' : 'false before activation');
+    }
+
+    function setDotStatus(id, text, statusClass) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = `dot ${statusClass}`;
+    }
+
+    function appendBusinessEvent(title, description, status = 'good') {
+      const timeline = document.querySelector('.timeline');
+      if (!timeline) return;
+      const symbol = status === 'bad' ? '×' : status === 'warn' ? '!' : '✓';
+      const item = document.createElement('div');
+      item.className = 'timeline-item';
+      item.innerHTML = `<span class="dot ${status}">${symbol}</span><div><strong>${title}</strong><span>${description}</span></div>`;
+      timeline.prepend(item);
+    }
+
+    function appendTimelineEvent(settings) {
+      appendBusinessEvent('Risk settings updated', `Max per trade: ${settings.maxTrade} USDT. Daily loss: ${settings.dailyLoss} USDT. Symbols: ${settings.allowedSymbols}.`, 'good');
+    }
+
+    function updateRiskPreview(settings) {
+      document.querySelectorAll('.risk-max-trade').forEach((el) => { el.textContent = `${settings.maxTrade} USDT`; });
+      setText('dbMaxTrade', settings.maxTrade);
+      setText('dbDailyLoss', settings.dailyLoss);
+      appendTimelineEvent(settings);
+    }
+
+    function refreshBusinessState() {
+      setCopyStatus(businessState.copyEnabled);
+      setText('dbOnboardingStatus', businessState.onboardingStatus);
+      setText('dbApiStatus', businessState.apiVerified ? 'verified' : 'pending_verification');
+
+      if (businessState.apiVerified) {
+        setStrongStatus('apiVerificationText', 'Verified', 'green');
+        setStrongStatus('activationApiStatus', 'Verified', 'green');
+        setStrongStatus('dashboardApiStatus', 'Connected', 'green');
+        setDotStatus('businessApiDot', '✓', 'good');
+      } else {
+        setStrongStatus('apiVerificationText', 'Pending', 'yellow');
+        setStrongStatus('activationApiStatus', 'Pending', 'yellow');
+        setStrongStatus('dashboardApiStatus', 'Pending', 'yellow');
+        setDotStatus('businessApiDot', '!', 'warn');
+      }
+
+      if (businessState.copyEnabled) {
+        setDotStatus('businessActivationDot', '✓', 'good');
+        setBadge('businessStatusBadge', 'Active follower', 'good');
+        setText('wizardStatusText', 'Status: onboarding completed. Copy trading is active and protected by risk limits.');
+        setBadge('wizardStepBadge', 'Completed', 'good');
+      } else if (businessState.apiVerified) {
+        setDotStatus('businessActivationDot', '!', 'warn');
+        setBadge('businessStatusBadge', 'Ready to activate', 'warn');
+        setText('wizardStatusText', 'Status: API verified. User must manually enable copy trading.');
+        setBadge('wizardStepBadge', 'Step 7 of 8', 'warn');
+      } else {
+        setDotStatus('businessActivationDot', '!', 'warn');
+        setBadge('businessStatusBadge', 'Pre-activation', 'blue');
+        setText('wizardStatusText', 'Status: API submitted, waiting for verification and activation confirmation.');
+        setBadge('wizardStepBadge', 'Step 5 of 8', 'warn');
+      }
+    }
+
+    updateRiskSettingsBtn.addEventListener('click', openRiskModal);
+
+    testApiKeyBtn.addEventListener('click', () => {
+      testApiKeyBtn.textContent = 'Testing API...';
+      testApiKeyBtn.disabled = true;
+      showToast('Simulating OKX API authentication, balance read, trade permission, and IP whitelist check.');
+      window.setTimeout(() => {
+        businessState.apiVerified = true;
+        businessState.onboardingStatus = 'api_verified';
+        testApiKeyBtn.textContent = 'API Verified';
+        refreshBusinessState();
+        appendBusinessEvent('API verification completed', 'Authentication, balance read, trade permission, and server IP whitelist checks passed.', 'good');
+        showToast('OKX API verified. User may now manually enable copy trading.');
+      }, 900);
+    });
+
+    enableCopyTradingBtn.addEventListener('click', () => {
+      if (!businessState.apiVerified) {
+        appendBusinessEvent('Activation blocked', 'User tried to enable copy trading before OKX API verification was completed.', 'warn');
+        showToast('Activation blocked: test and verify the OKX API key first.');
+        return;
+      }
+      if (!businessState.planActive || !businessState.riskAccepted) {
+        appendBusinessEvent('Activation blocked', 'Business requirements are incomplete: plan or risk agreement is missing.', 'warn');
+        showToast('Activation blocked: complete all business requirements first.');
+        return;
+      }
+      businessState.copyEnabled = true;
+      businessState.onboardingStatus = 'active';
+      refreshBusinessState();
+      appendBusinessEvent('Copy trading activated', `Follower is now active with ${riskSettings.maxTrade} USDT max per trade and ${riskSettings.dailyLoss} USDT daily loss limit.`, 'good');
+      showToast('Copy trading is now active. Risk limits and emergency stop remain available.');
+    });
+
+    stopCopyTradingBtn.addEventListener('click', () => {
+      if (!businessState.copyEnabled) {
+        showToast('Copy trading is already OFF.');
+        return;
+      }
+      businessState.copyEnabled = false;
+      businessState.onboardingStatus = 'copy_paused';
+      refreshBusinessState();
+      appendBusinessEvent('Emergency stop triggered', 'Copy trading was paused immediately. Existing copied positions should be handled by the user or backend policy.', 'bad');
+      showToast('Copy trading stopped. No new copied trades will be placed.');
+    });
+
+    saveDraftBtn.addEventListener('click', () => {
+      const payload = { businessState, riskSettings, savedAt: new Date().toISOString() };
+      localStorage.setItem('copytrade_onboarding_preview_draft', JSON.stringify(payload));
+      appendBusinessEvent('Onboarding draft saved', 'Current prototype settings were saved to browser local storage.', 'good');
+      showToast('Draft saved in this browser preview.');
+    });
+
+    backStepBtn.addEventListener('click', () => {
+      document.querySelector('.content-scroll').scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('Preview action: user would go back to the previous onboarding step.');
+    });
+
+    closeRiskModalBtn.addEventListener('click', closeRiskModal);
+    cancelRiskModalBtn.addEventListener('click', closeRiskModal);
+    riskModal.addEventListener('click', (event) => { if (event.target === riskModal) closeRiskModal(); });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && riskModal.classList.contains('show')) closeRiskModal(); });
+
+    riskSettingsForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const nextSettings = {
+        copyMode: fields.copyMode.value,
+        maxTrade: Number(fields.maxTrade.value),
+        dailyLoss: Number(fields.dailyLoss.value),
+        maxOpenTrades: Number(fields.maxOpenTrades.value),
+        allowedMarket: fields.allowedMarket.value,
+        slippage: Number(fields.slippage.value),
+        allowedSymbols: fields.allowedSymbols.value.trim(),
+      };
+      if (!nextSettings.allowedSymbols) { showError('Allowed symbols cannot be empty. Add at least one OKX symbol, for example BTC-USDT.'); return; }
+      if (nextSettings.maxTrade <= 0 || nextSettings.dailyLoss <= 0 || nextSettings.maxOpenTrades <= 0 || nextSettings.slippage <= 0) { showError('All numeric risk limits must be greater than zero.'); return; }
+      if (nextSettings.dailyLoss < nextSettings.maxTrade) { showError('Max daily loss must be greater than or equal to max per trade.'); return; }
+      riskSettings = nextSettings;
+      updateRiskPreview(riskSettings);
+      closeRiskModal();
+      showToast(`Saved: ${riskSettings.maxTrade} USDT max per trade, ${riskSettings.dailyLoss} USDT daily loss.`);
+    });
+
+    refreshBusinessState();
+  </script>
+</body>
+</html>
