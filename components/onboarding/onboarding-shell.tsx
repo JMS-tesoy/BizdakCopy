@@ -5,7 +5,9 @@ import {
   Activity,
   ArrowLeft,
   BadgeCheck,
+  Check,
   CheckCircle2,
+  ChevronDown,
   CircleAlert,
   Database,
   Info,
@@ -24,6 +26,17 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
@@ -89,9 +102,10 @@ type ValidationErrors<T extends string> = Partial<Record<T, string>>
 
 const panelClass = "rounded-lg border border-border bg-card shadow-sm"
 const stepCardClass = "rounded-lg border border-border bg-card p-5 shadow-sm"
-const inputClass = "h-11 rounded-lg bg-background/60 px-3 text-foreground placeholder:text-muted-foreground"
-const selectClass =
-  "onboarding-select h-11 w-full cursor-pointer rounded-lg border border-input bg-popover/80 px-3 text-sm font-medium text-foreground shadow-sm outline-none transition hover:bg-muted/60 focus:border-ring focus:ring-3 focus:ring-ring/50"
+const inputClass =
+  "h-11 rounded-lg border-border bg-background px-3 font-medium text-foreground shadow-sm placeholder:text-muted-foreground/70 hover:bg-background focus-visible:border-border focus-visible:bg-background focus-visible:ring-0 read-only:cursor-default read-only:bg-muted/40 read-only:text-muted-foreground"
+const dropdownTriggerClass =
+  "h-11 w-full justify-between rounded-lg border-border/40 bg-card px-3 text-sm font-medium text-foreground shadow-sm hover:border-border/60 hover:bg-card focus-visible:border-border/50 focus-visible:ring-0 aria-invalid:border-destructive/60"
 const cardToStepMap = [0, 1, 2, 3, 4, 5, 6, 7]
 const stepToCardMap = [0, 1, 2, 3, 4, 5, 6, 7]
 const countryGroups = [
@@ -108,6 +122,9 @@ const countryGroups = [
     countries: ["UAE", "Saudi Arabia", "Qatar", "Kuwait", "Bahrain"],
   },
 ]
+const copyModeOptions: RiskSettings["copyMode"][] = ["Fixed USDT per trade", "Equity percentage", "Multiplier"]
+const allowedMarketOptions: RiskSettings["allowedMarket"][] = ["Spot only", "Futures - later"]
+const environmentOptions: OkxCredentials["environment"][] = ["Demo Trading", "Live Trading"]
 
 export function OnboardingShell() {
   const [profile, setProfile] = useState<ProfileState>({
@@ -751,9 +768,8 @@ function OnboardingTopbar({
         <p className="mt-1 text-sm text-muted-foreground">{statusCopy}</p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
-        <StatusPill>Demo UI Preview</StatusPill>
-        <StatusPill tone="good">Read + Trade Only</StatusPill>
-        <StatusPill tone="warn">Withdraw Always Off</StatusPill>
+        <StatusPill tone="good">Allow viewing and trading only</StatusPill>
+        <StatusPill tone="warn">Never allow withdrawals</StatusPill>
         <StatusBadge tone={step.tone}>{step.label}</StatusBadge>
       </div>
     </header>
@@ -939,23 +955,11 @@ function AccountProfileCard({
           />
         </Field>
         <Field label="Country" error={errors.country}>
-          <select
-            aria-invalid={Boolean(errors.country)}
-            className={selectClass}
+          <CountryDropdown
+            ariaInvalid={Boolean(errors.country)}
             value={profile.country}
-            onChange={(event) => onChange("country", event.target.value)}
-          >
-            <option value="">Select your country</option>
-            {countryGroups.map((group) => (
-              <optgroup key={group.region} label={group.region}>
-                {group.countries.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+            onChange={(country) => onChange("country", country)}
+          />
         </Field>
       </div>
       <div className="flex justify-end">
@@ -1050,11 +1054,12 @@ function RiskSettingsCard({
       <CardHint>Review your max trade size, daily loss cap, allowed symbols, and slippage limit.</CardHint>
       <div className="grid gap-3 md:grid-cols-4">
         <Field label="Copy mode">
-          <select className={selectClass} value={riskSettings.copyMode} aria-readonly onChange={() => undefined}>
-            <option>Fixed USDT per trade</option>
-            <option>Equity percentage</option>
-            <option>Multiplier</option>
-          </select>
+          <OnboardingDropdown
+            value={riskSettings.copyMode}
+            options={copyModeOptions}
+            onChange={() => undefined}
+            readOnly
+          />
         </Field>
         <Field label="Fixed amount">
           <Input className={inputClass} value={`${riskSettings.maxTrade} USDT`} readOnly />
@@ -1068,10 +1073,12 @@ function RiskSettingsCard({
       </div>
       <div className="grid gap-3 md:grid-cols-3">
         <Field label="Allowed market">
-          <select className={selectClass} value={riskSettings.allowedMarket} aria-readonly onChange={() => undefined}>
-            <option>Spot only</option>
-            <option>Futures - later</option>
-          </select>
+          <OnboardingDropdown
+            value={riskSettings.allowedMarket}
+            options={allowedMarketOptions}
+            onChange={() => undefined}
+            readOnly
+          />
         </Field>
         <Field label="Allowed symbols">
           <Input className={inputClass} value={riskSettings.allowedSymbols} readOnly />
@@ -1175,15 +1182,12 @@ function OkxApiCredentialsCard({
           />
         </Field>
         <Field label="Environment" error={errors.environment}>
-          <select
-            aria-invalid={Boolean(errors.environment)}
-            className={selectClass}
+          <OnboardingDropdown
+            ariaInvalid={Boolean(errors.environment)}
             value={credentials.environment}
-            onChange={(event) => onChange("environment", event.target.value as OkxCredentials["environment"])}
-          >
-            <option>Demo Trading</option>
-            <option>Live Trading</option>
-          </select>
+            options={environmentOptions}
+            onChange={(environment) => onChange("environment", environment)}
+          />
         </Field>
       </div>
       <div className="flex justify-end">
@@ -1504,17 +1508,12 @@ function RiskSettingsModal({
 
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Copy mode" error={fieldErrors.copyMode}>
-                <select
-                  aria-invalid={Boolean(fieldErrors.copyMode)}
-                  className={selectClass}
+                <OnboardingDropdown
+                  ariaInvalid={Boolean(fieldErrors.copyMode)}
                   value={draft.copyMode}
-                  onChange={(event) => setField("copyMode", event.target.value as RiskSettings["copyMode"])}
-                  required
-                >
-                  <option>Fixed USDT per trade</option>
-                  <option>Equity percentage</option>
-                  <option>Multiplier</option>
-                </select>
+                  options={copyModeOptions}
+                  onChange={(copyMode) => setField("copyMode", copyMode)}
+                />
               </Field>
               <Field label="Max per trade, USDT" error={fieldErrors.maxTrade}>
                 <Input
@@ -1559,16 +1558,12 @@ function RiskSettingsModal({
 
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Allowed market" error={fieldErrors.allowedMarket}>
-                <select
-                  aria-invalid={Boolean(fieldErrors.allowedMarket)}
-                  className={selectClass}
+                <OnboardingDropdown
+                  ariaInvalid={Boolean(fieldErrors.allowedMarket)}
                   value={draft.allowedMarket}
-                  onChange={(event) => setField("allowedMarket", event.target.value as RiskSettings["allowedMarket"])}
-                  required
-                >
-                  <option>Spot only</option>
-                  <option>Futures - later</option>
-                </select>
+                  options={allowedMarketOptions}
+                  onChange={(allowedMarket) => setField("allowedMarket", allowedMarket)}
+                />
               </Field>
               <Field label="Slippage limit, %" error={fieldErrors.slippage}>
                 <Input
@@ -1738,6 +1733,118 @@ function StepCard({
       </div>
       {children}
     </article>
+  )
+}
+
+function OnboardingDropdown<T extends string>({
+  value,
+  options,
+  placeholder = "Select an option",
+  ariaInvalid,
+  readOnly,
+  onChange,
+}: {
+  value: T | ""
+  options: readonly T[]
+  placeholder?: string
+  ariaInvalid?: boolean
+  readOnly?: boolean
+  onChange: (value: T) => void
+}) {
+  const selectedLabel = value || placeholder
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(dropdownTriggerClass, !value && "text-muted-foreground", readOnly && "bg-muted/40 text-muted-foreground")}
+          aria-invalid={ariaInvalid}
+          aria-readonly={readOnly || undefined}
+        >
+          <span className="truncate">{selectedLabel}</span>
+          <ChevronDown data-icon="inline-end" className="ml-auto opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+        <DropdownMenuGroup>
+          {options.map((option) => {
+            const isSelected = option === value
+
+            return (
+              <DropdownMenuItem
+                key={option}
+                onSelect={(event) => {
+                  if (readOnly) {
+                    event.preventDefault()
+                    return
+                  }
+
+                  onChange(option)
+                }}
+              >
+                <span className="flex size-4 items-center justify-center">
+                  {isSelected ? <Check /> : null}
+                </span>
+                <span className="truncate">{option}</span>
+              </DropdownMenuItem>
+            )
+          })}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function CountryDropdown({
+  value,
+  ariaInvalid,
+  onChange,
+}: {
+  value: string
+  ariaInvalid?: boolean
+  onChange: (value: string) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(dropdownTriggerClass, !value && "text-muted-foreground")}
+          aria-invalid={ariaInvalid}
+        >
+          <span className="truncate">{value || "Select your country"}</span>
+          <ChevronDown data-icon="inline-end" className="ml-auto opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+        <DropdownMenuGroup>
+          {countryGroups.map((group) => (
+            <DropdownMenuSub key={group.region}>
+              <DropdownMenuSubTrigger>{group.region}</DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent className="min-w-[220px]">
+                  {group.countries.map((country) => {
+                    const isSelected = country === value
+
+                    return (
+                      <DropdownMenuItem key={country} onSelect={() => onChange(country)}>
+                        <span className="flex size-4 items-center justify-center">
+                          {isSelected ? <Check /> : null}
+                        </span>
+                        <span>{country}</span>
+                      </DropdownMenuItem>
+                    )
+                  })}
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
