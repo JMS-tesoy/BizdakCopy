@@ -10,14 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { registrationSchema, type RegistrationFormValues } from "@/lib/validations/auth"
+import { PLAN_DETAILS, PLAN_IDS } from "@/lib/plans"
+import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
-
-const plans = [
-  { id: "starter", name: "Starter", price: "$49/mo", accounts: "2 accounts" },
-  { id: "pro", name: "Pro", price: "$99/mo", accounts: "5 accounts" },
-  { id: "enterprise", name: "Enterprise", price: "$249/mo", accounts: "Unlimited" },
-]
 
 export function RegistrationForm() {
   const router = useRouter()
@@ -43,23 +39,33 @@ export function RegistrationForm() {
     setError("")
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+      const supabase = createClient()
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            plan: values.plan,
+            subscription_status: "inactive",
+          },
+        },
       })
 
-      const data = await response.json()
-
-      if (!data.success) {
-        setError(data.error || "Registration failed")
+      if (signUpError) {
+        setError(signUpError.message || "Registration failed")
         return
       }
 
-      // Store credentials temporarily for checkout flow
-      sessionStorage.setItem("pendingUser", JSON.stringify({ email: values.email, plan: values.plan }))
+      if (!data.user) {
+        setError("Registration could not be completed. Please try again.")
+        return
+      }
 
-      // Redirect to checkout
+      sessionStorage.setItem(
+        "pendingUser",
+        JSON.stringify({ email: values.email, plan: values.plan, userId: data.user.id })
+      )
+
       router.push(`/checkout?plan=${values.plan}`)
     } catch {
       setError("Something went wrong. Please try again.")
@@ -117,24 +123,28 @@ export function RegistrationForm() {
               value={selectedPlan}
               onValueChange={(value) => setValue("plan", value as RegistrationFormValues["plan"])}
             >
-              {plans.map((p) => (
+              {PLAN_IDS.map((planId) => {
+                const plan = PLAN_DETAILS[planId]
+
+                return (
                 <label
-                  key={p.id}
-                  htmlFor={p.id}
+                  key={planId}
+                  htmlFor={planId}
                   className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
-                    selectedPlan === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                    selectedPlan === planId ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <RadioGroupItem value={p.id} id={p.id} />
+                    <RadioGroupItem value={planId} id={planId} />
                     <div>
-                      <p className="font-medium">{p.name}</p>
-                      <p className="text-sm text-muted-foreground">{p.accounts}</p>
+                      <p className="font-medium">{plan.name}</p>
+                      <p className="text-sm text-muted-foreground">{plan.features[0]}</p>
                     </div>
                   </div>
-                  <span className="font-semibold">{p.price}</span>
+                  <span className="font-semibold">{plan.price}/mo</span>
                 </label>
-              ))}
+                )
+              })}
             </RadioGroup>
           </div>
         </CardContent>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth"
+import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
 
@@ -31,23 +32,17 @@ export function LoginForm() {
     setError("")
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+      const supabase = createClient()
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
       })
 
-      const data = await response.json()
-
-      if (!data.success) {
-        setError(data.error || "Login failed")
+      if (loginError) {
+        setError(loginError.message || "Invalid email or password")
         return
       }
 
-      // Store session
-      sessionStorage.setItem("user", JSON.stringify(data.data.user))
-
-      // Redirect to dashboard
       router.push("/dashboard")
     } catch {
       setError("Something went wrong. Please try again.")

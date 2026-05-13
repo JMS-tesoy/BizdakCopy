@@ -1,21 +1,13 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Navbar } from "@/components/navbar"
-import { Loader2, CreditCard, Check } from "lucide-react"
+import { Suspense, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Check, CreditCard, Loader2 } from "lucide-react"
 
-const planDetails = {
-  starter: { name: "Starter", price: "$49", features: ["2 MT5 accounts", "All signals", "Email support"] },
-  pro: { name: "Pro", price: "$99", features: ["5 MT5 accounts", "All signals", "Priority support", "Risk tools"] },
-  enterprise: {
-    name: "Enterprise",
-    price: "$249",
-    features: ["Unlimited accounts", "All signals", "24/7 support", "Custom features"],
-  },
-}
+import { Navbar } from "@/components/navbar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getPlanDetails } from "@/lib/plans"
 
 function CheckoutContent() {
   const searchParams = useSearchParams()
@@ -24,10 +16,11 @@ function CheckoutContent() {
   const [error, setError] = useState("")
 
   const plan = searchParams.get("plan") || "pro"
-  const details = planDetails[plan as keyof typeof planDetails] || planDetails.pro
+  const details = getPlanDetails(plan)
 
   useEffect(() => {
     const pendingUser = sessionStorage.getItem("pendingUser")
+
     if (!pendingUser) {
       router.push("/register")
     }
@@ -38,12 +31,13 @@ function CheckoutContent() {
     setError("")
 
     const pendingUser = sessionStorage.getItem("pendingUser")
+
     if (!pendingUser) {
       router.push("/register")
       return
     }
 
-    const { email } = JSON.parse(pendingUser)
+    const { email, userId } = JSON.parse(pendingUser)
 
     try {
       const response = await fetch("/api/checkout", {
@@ -51,6 +45,7 @@ function CheckoutContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
+          userId,
           plan,
           successUrl: `${window.location.origin}/dashboard?success=true`,
           cancelUrl: `${window.location.origin}/checkout?plan=${plan}&canceled=true`,
@@ -64,8 +59,7 @@ function CheckoutContent() {
         return
       }
 
-      // Redirect to Stripe Checkout
-      window.location.href = data.data.url
+      window.location.assign(data.data.url)
     } catch {
       setError("Something went wrong. Please try again.")
     } finally {
@@ -74,45 +68,74 @@ function CheckoutContent() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background text-foreground">
       <Navbar />
 
-      <section className="pt-32 pb-20 px-6">
+      <section className="bg-page-texture px-6 pb-20 pt-32">
         <div className="container mx-auto max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Complete Your Order</h1>
-            <p className="text-muted-foreground">Start copying trades with the {details.name} plan</p>
+          <div className="mb-8 text-center">
+            <p className="mb-3 text-sm font-medium text-muted-foreground">
+              Secure PayMongo checkout
+            </p>
+            <h1 className="mb-2 text-3xl font-bold tracking-tight">
+              Complete Your Order
+            </h1>
+            <p className="text-muted-foreground">
+              Start copying trades with the {details.name} plan.
+            </p>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+          <Card className="border-border bg-card/95 text-card-foreground shadow-2xl shadow-black/10 backdrop-blur dark:shadow-black/30">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="flex items-start justify-between gap-4">
                 <span>{details.name} Plan</span>
-                <span className="text-2xl">
+                <span className="text-right text-2xl">
                   {details.price}
-                  <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                  <span className="block text-sm font-normal text-muted-foreground">
+                    per month
+                  </span>
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <ul className="space-y-2">
+
+            <CardContent className="space-y-6 pt-6">
+              <ul className="space-y-3">
                 {details.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-chart-2" />
-                    {feature}
+                  <li
+                    key={feature}
+                    className="flex items-center gap-3 text-sm text-card-foreground"
+                  >
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Check className="h-4 w-4" />
+                    </span>
+                    <span>{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg">{error}</div>}
+              {error && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
 
-              <Button className="w-full" size="lg" onClick={handleCheckout} disabled={loading}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-                Pay with Stripe
+              <Button
+                className="w-full font-semibold"
+                size="lg"
+                onClick={handleCheckout}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CreditCard className="mr-2 h-4 w-4" />
+                )}
+                {loading ? "Starting checkout..." : "Pay with PayMongo"}
               </Button>
 
-              <p className="text-xs text-muted-foreground text-center">
-                Secure payment powered by Stripe. Cancel anytime.
+              <p className="text-center text-xs leading-relaxed text-muted-foreground">
+                Secure payment powered by PayMongo. E-wallet availability depends
+                on your PayMongo account.
               </p>
             </CardContent>
           </Card>
@@ -126,8 +149,8 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>
       }
     >

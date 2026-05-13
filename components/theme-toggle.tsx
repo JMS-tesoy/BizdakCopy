@@ -1,10 +1,17 @@
 "use client"
 
 import * as React from "react"
-import { Monitor, Moon, Sun } from "lucide-react"
+import { Check, Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const themeOptions = ["system", "light", "dark"] as const
 type ThemeOption = (typeof themeOptions)[number]
@@ -33,21 +40,16 @@ function useIsMounted() {
   )
 }
 
-function getNextTheme(theme: ThemeOption) {
-  const currentIndex = themeOptions.findIndex((option) => option === theme)
-  return themeOptions[(currentIndex + 1) % themeOptions.length]
-}
-
 function ThemeIcon({ theme }: { theme: string | undefined }) {
   if (theme === "light") {
-    return <Sun className="size-4" aria-hidden="true" />
+    return <Sun aria-hidden="true" />
   }
 
   if (theme === "dark") {
-    return <Moon className="size-4" aria-hidden="true" />
+    return <Moon aria-hidden="true" />
   }
 
-  return <Monitor className="size-4" aria-hidden="true" />
+  return <Monitor aria-hidden="true" />
 }
 
 export function ThemeToggle() {
@@ -55,19 +57,32 @@ export function ThemeToggle() {
   const isMounted = useIsMounted()
 
   const activeTheme = isMounted ? normalizeTheme(theme) : "system"
-  const nextTheme = getNextTheme(activeTheme)
-  const label = `Theme: ${themeLabels[activeTheme]}. Click to switch to ${themeLabels[nextTheme]}.`
+  const label = `Theme: ${themeLabels[activeTheme]}. Choose color theme.`
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      aria-label={label}
-      title={label}
-      onClick={() => setTheme(nextTheme)}
-    >
-      <ThemeIcon theme={activeTheme} />
-    </Button>
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={label}
+          title={label}
+          className="border-transparent focus-visible:border-transparent focus-visible:ring-0 aria-expanded:border-transparent"
+        >
+          <ThemeIcon theme={activeTheme} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuGroup>
+          {themeOptions.map((option) => (
+            <DropdownMenuItem key={option} onSelect={() => setTheme(option)}>
+              {themeLabels[option]}
+              <Check className={activeTheme === option ? "ml-auto size-3" : "ml-auto size-3 opacity-0"} />
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
