@@ -32,7 +32,7 @@ export interface Follower {
   id: string
   email: string
   apiKey: string
-  subscriptionTier: "free" | "pro"
+  subscriptionTier: "trial" | "pro" | "profit-sharing"
   subscriptionStatus: "active" | "inactive" | "expired"
   maxAccounts: number
   connectedAccounts: number

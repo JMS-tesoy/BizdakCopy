@@ -7,7 +7,7 @@ import { Check, CreditCard, Loader2 } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getPlanDetails, isPlanId } from "@/lib/plans"
+import { getPlanDetails, normalizePlanId } from "@/lib/plans"
 import { createClient } from "@/utils/supabase/client"
 
 type CheckoutIdentity = {
@@ -18,32 +18,39 @@ type CheckoutIdentity = {
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [checkoutIdentity, setCheckoutIdentity] = useState<CheckoutIdentity | null>(null)
+  const [checkoutIdentity, setCheckoutIdentity] =
+    useState<CheckoutIdentity | null>(null)
 
   const requestedPlan = searchParams.get("plan")
-  const plan = isPlanId(requestedPlan) ? requestedPlan : "pro"
+  const plan = normalizePlanId(requestedPlan) ?? "pro"
   const details = getPlanDetails(plan)
 
   useEffect(() => {
     async function loadCheckoutIdentity() {
-      if (plan === "free") {
+      if (plan === "trial") {
         router.push("/dashboard")
         return
       }
 
       const supabase = createClient()
+
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser()
 
-      if (user?.email) {
-        setCheckoutIdentity({ email: user.email, userId: user.id })
+      if (userError || !user?.email) {
+        router.push("/register")
         return
       }
 
-      router.push("/register")
+      setCheckoutIdentity({
+        email: user.email,
+        userId: user.id,
+      })
     }
 
     loadCheckoutIdentity()
@@ -53,7 +60,7 @@ function CheckoutContent() {
     setLoading(true)
     setError("")
 
-    if (plan === "free") {
+    if (plan === "trial") {
       router.push("/dashboard")
       return
     }
@@ -66,7 +73,9 @@ function CheckoutContent() {
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           email: checkoutIdentity.email,
           userId: checkoutIdentity.userId,
@@ -78,8 +87,13 @@ function CheckoutContent() {
 
       const data = await response.json()
 
-      if (!data.success) {
+      if (!response.ok || !data.success) {
         setError(data.error || "Failed to create checkout session")
+        return
+      }
+
+      if (!data.data?.url) {
+        setError("Checkout session was created, but no payment URL was returned.")
         return
       }
 
@@ -101,9 +115,11 @@ function CheckoutContent() {
             <p className="mb-3 text-sm font-medium text-muted-foreground">
               Secure PayMongo checkout
             </p>
-            <h1 className="mb-2 text-3xl font-bold tracking-tight">
+
+            <h1 className="mb-2 text-3xl font-semibold tracking-tight">
               Complete Your Order
             </h1>
+
             <p className="text-muted-foreground">
               Start copying trades with the {details.name} plan.
             </p>
@@ -113,10 +129,11 @@ function CheckoutContent() {
             <CardHeader className="border-b border-border">
               <CardTitle className="flex items-start justify-between gap-4">
                 <span>{details.name} Plan</span>
+
                 <span className="text-right text-2xl">
                   {details.price}
                   <span className="block text-sm font-normal text-muted-foreground">
-                    per month
+                    {details.period}
                   </span>
                 </span>
               </CardTitle>
@@ -130,18 +147,25 @@ function CheckoutContent() {
                     className="flex items-center gap-3 text-sm text-card-foreground"
                   >
                     <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <Check className="h-4 w-4" />
+                      <Check className="size-4" />
                     </span>
+
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              {error && (
+              {details.priceNote ? (
+                <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                  {details.priceNote}
+                </div>
+              ) : null}
+
+              {error ? (
                 <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                   {error}
                 </div>
-              )}
+              ) : null}
 
               <Button
                 className="w-full font-semibold"
@@ -150,10 +174,11 @@ function CheckoutContent() {
                 disabled={loading || !checkoutIdentity}
               >
                 {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (
-                  <CreditCard className="mr-2 h-4 w-4" />
+                  <CreditCard className="mr-2 size-4" />
                 )}
+
                 {loading ? "Starting checkout..." : "Pay with PayMongo"}
               </Button>
 
@@ -174,7 +199,7 @@ export default function CheckoutPage() {
     <Suspense
       fallback={
         <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </main>
       }
     >

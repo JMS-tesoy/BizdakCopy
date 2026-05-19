@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js"
 
-import { FREE_TRIAL_DAYS, isPlanId, type PlanId } from "@/lib/plans"
+import { FREE_TRIAL_DAYS, normalizePlanId, type PlanId } from "@/lib/plans"
 
 export type SubscriptionSummary = {
   plan: PlanId
@@ -11,6 +11,7 @@ export type SubscriptionSummary = {
   isTrialExpired: boolean
   isPaid: boolean
   isProPending: boolean
+  isPaymentPending: boolean
   canUsePaidFeatures: boolean
 }
 
@@ -57,15 +58,16 @@ export function getSubscriptionSummary(
   user: User | null | undefined
 ): SubscriptionSummary {
   const rawPlan = readAppMetadataString(user, "plan")
-  const plan = isPlanId(rawPlan) ? rawPlan : "free"
+  const plan = normalizePlanId(rawPlan) ?? "trial"
   const status = readAppMetadataString(user, "subscription_status")
   const trialEndsAt = getTrialEndsAt(user)
   const trialDaysRemaining = getTrialDaysRemaining(trialEndsAt)
 
-  const isPaid = plan === "pro" && status === "active"
+  const isPaid = plan !== "trial" && status === "active"
   const isProPending = plan === "pro" && !isPaid
-  const isFreeTrial = !isPaid && !isProPending && trialDaysRemaining > 0
-  const isTrialExpired = !isPaid && !isProPending && trialDaysRemaining === 0
+  const isPaymentPending = plan !== "trial" && !isPaid
+  const isFreeTrial = plan === "trial" && trialDaysRemaining > 0
+  const isTrialExpired = plan === "trial" && trialDaysRemaining === 0
 
   return {
     plan,
@@ -76,6 +78,7 @@ export function getSubscriptionSummary(
     isTrialExpired,
     isPaid,
     isProPending,
+    isPaymentPending,
     canUsePaidFeatures: isPaid,
   }
 }

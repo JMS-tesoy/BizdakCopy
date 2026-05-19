@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { isPlanId } from "@/lib/plans"
+import { normalizePlanId } from "@/lib/plans"
 import { createPayMongoCheckoutSession } from "@/lib/paymongo"
 import { getSubscriptionSummary } from "@/lib/subscription"
 import type { ApiResponse } from "@/lib/types"
@@ -8,9 +8,10 @@ import { createClient } from "@/utils/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, userId, plan, successUrl, cancelUrl } = await request.json()
+    const { email, userId, plan: requestedPlan, successUrl, cancelUrl } = await request.json()
+    const plan = normalizePlanId(requestedPlan)
 
-    if (!plan) {
+    if (!requestedPlan) {
       const response: ApiResponse<null> = {
         success: false,
         error: "Plan is required",
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 400 })
     }
 
-    if (!isPlanId(plan)) {
+    if (!plan) {
       const response: ApiResponse<null> = {
         success: false,
         error: "Invalid plan selected",
@@ -28,10 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 400 })
     }
 
-    if (plan === "free") {
+    if (plan === "trial") {
       const response: ApiResponse<null> = {
         success: false,
-        error: "The Free plan does not require checkout",
+        error: "The Trial plan does not require checkout",
         timestamp: new Date().toISOString(),
       }
       return NextResponse.json(response, { status: 400 })
@@ -65,11 +66,19 @@ export async function POST(request: NextRequest) {
     if (subscription.isPaid) {
       const response: ApiResponse<null> = {
         success: false,
-        error: "Your Pro access is already active",
+        error: "Your paid access is already active",
         timestamp: new Date().toISOString(),
       }
       return NextResponse.json(response, { status: 409 })
     }
+
+    const session = await createPayMongoCheckoutSession({
+      email: user.email,
+      userId: user.id,
+      plan,
+      successUrl: successUrl || `${request.headers.get("origin")}/dashboard?success=true`,
+      cancelUrl: cancelUrl || `${request.headers.get("origin")}/register?canceled=true`,
+    })
 
     const admin = createAdminClient()
 
@@ -79,15 +88,9 @@ export async function POST(request: NextRequest) {
         plan,
         subscription_provider: "paymongo",
         subscription_status: "pending_payment",
+        paymongo_checkout_session_id: session.id,
+        subscription_pending_at: new Date().toISOString(),
       },
-    })
-
-    const session = await createPayMongoCheckoutSession({
-      email: user.email,
-      userId: user.id,
-      plan,
-      successUrl: successUrl || `${request.headers.get("origin")}/dashboard?success=true`,
-      cancelUrl: cancelUrl || `${request.headers.get("origin")}/register?canceled=true`,
     })
 
     const response: ApiResponse<{ sessionId: string; url: string }> = {

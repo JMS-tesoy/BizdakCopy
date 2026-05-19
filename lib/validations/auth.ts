@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { emailSchema } from "@/lib/validations/email"
 
-export const authPlanSchema = z.enum(["free", "pro"])
+export const authPlanSchema = z.enum(["trial", "pro", "profit-sharing"])
 
 export const registrationPasswordSchema = z
   .string()

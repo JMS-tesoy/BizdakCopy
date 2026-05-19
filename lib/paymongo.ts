@@ -127,7 +127,17 @@ export async function createPayMongoCheckoutSession({
   }
 }
 
-export function verifyPayMongoWebhookSignature(rawBody: string, signatureHeader: string, webhookSecret: string) {
+export function verifyPayMongoWebhookSignature({
+  rawBody,
+  signatureHeader,
+  webhookSecret,
+  livemode,
+}: {
+  rawBody: string
+  signatureHeader: string
+  webhookSecret: string
+  livemode: boolean
+}) {
   const parts = Object.fromEntries(
     signatureHeader.split(",").map((part) => {
       const [key, value] = part.split("=")
@@ -135,20 +145,25 @@ export function verifyPayMongoWebhookSignature(rawBody: string, signatureHeader:
     })
   )
   const timestamp = parts.t
-  const expectedSignatures = [parts.te, parts.li].filter(Boolean)
+  const expectedSignature = livemode ? parts.li : parts.te
 
-  if (!timestamp || expectedSignatures.length === 0) {
+  if (!timestamp || !expectedSignature) {
+    return false
+  }
+
+  const timestampMs = Number(timestamp) * 1000
+  const fiveMinutesMs = 5 * 60 * 1000
+
+  if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > fiveMinutesMs) {
     return false
   }
 
   const signedPayload = `${timestamp}.${rawBody}`
   const computedSignature = createHmac("sha256", webhookSecret).update(signedPayload).digest("hex")
 
-  return expectedSignatures.some((signature) => {
-    if (!signature || signature.length !== computedSignature.length) {
-      return false
-    }
+  if (expectedSignature.length !== computedSignature.length) {
+    return false
+  }
 
-    return timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature))
-  })
+  return timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(computedSignature))
 }

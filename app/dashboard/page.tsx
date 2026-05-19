@@ -31,6 +31,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { getPlanDetails } from "@/lib/plans"
 import { getSubscriptionSummary } from "@/lib/subscription"
 import { createClient } from "@/utils/supabase/client"
 
@@ -113,7 +114,7 @@ function maskKey(value?: string) {
 
 function getPlanLabel(plan?: string) {
   if (!plan) return "No plan selected"
-  return plan.charAt(0).toUpperCase() + plan.slice(1)
+  return getPlanDetails(plan).name
 }
 
 function dashboardBadgeClass(tone: DashboardTone) {
@@ -150,16 +151,21 @@ function StateIcon({ tone }: { tone: DashboardTone }) {
 }
 
 export default function DashboardPage() {
-  const router = useRouter()
+  const { push, refresh } = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [copied, setCopied] = useState(false)
 
   const subscription = getSubscriptionSummary(user)
-  const selectedPlan = subscription.isPaid ? "pro" : subscription.plan
+  const selectedPlan = subscription.plan
   const isSubscriptionActive = subscription.isPaid
   const isEmailConfirmed = Boolean(user?.email_confirmed_at)
   const dashboardStats = getDashboardStats(isSubscriptionActive)
+  const nextStepHref = isSubscriptionActive
+    ? "/onboarding"
+    : subscription.isPaymentPending
+      ? `/checkout?plan=${subscription.plan}`
+      : "/#pricing"
 
   useEffect(() => {
     const supabase = createClient()
@@ -170,7 +176,7 @@ export default function DashboardPage() {
       } = await supabase.auth.getUser()
 
       if (!currentUser) {
-        router.push("/login")
+        push("/login")
         return
       }
 
@@ -178,7 +184,7 @@ export default function DashboardPage() {
         await fetch("/api/access/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan: "free" }),
+          body: JSON.stringify({ plan: "trial" }),
         })
 
         const {
@@ -195,7 +201,7 @@ export default function DashboardPage() {
     }
 
     loadUser()
-  }, [router])
+  }, [push])
 
   function copyAccountId() {
     if (!user?.id) return
@@ -209,8 +215,8 @@ export default function DashboardPage() {
     const supabase = createClient()
 
     await supabase.auth.signOut()
-    router.push("/login")
-    router.refresh()
+    push("/login")
+    refresh()
   }
 
   if (isLoadingUser || !user) {
@@ -240,7 +246,7 @@ export default function DashboardPage() {
             <div className="grid gap-2">
               <Link
                 href="/dashboard"
-                className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-3 text-sm font-bold text-foreground shadow-sm"
+                className="flex items-center gap-3 rounded-lg border border-border bg-background p-3 text-sm font-bold text-foreground shadow-sm"
               >
                 <span className="grid size-6 place-items-center rounded-lg bg-muted">
                   <LayoutDashboard />
@@ -251,7 +257,7 @@ export default function DashboardPage() {
               {subscription.isPaid ? (
                 <Link
                   href="/onboarding"
-                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-sm font-bold text-muted-foreground"
+                  className="flex items-center gap-3 rounded-lg border border-transparent p-3 text-sm font-bold text-muted-foreground"
                 >
                   <span className="grid size-6 place-items-center rounded-lg bg-muted">
                     <SlidersHorizontal />
@@ -261,7 +267,7 @@ export default function DashboardPage() {
               ) : (
                 <Link
                   href="/checkout?plan=pro"
-                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-sm font-bold text-muted-foreground"
+                  className="flex items-center gap-3 rounded-lg border border-transparent p-3 text-sm font-bold text-muted-foreground"
                 >
                   <span className="grid size-6 place-items-center rounded-lg bg-muted">
                     <CreditCard />
@@ -273,7 +279,7 @@ export default function DashboardPage() {
               {subscription.isPaid ? (
                 <Link
                   href="/billing"
-                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-sm font-bold text-muted-foreground"
+                  className="flex items-center gap-3 rounded-lg border border-transparent p-3 text-sm font-bold text-muted-foreground"
                 >
                   <span className="grid size-6 place-items-center rounded-lg bg-muted">
                     <CircleDollarSign />
@@ -304,7 +310,7 @@ export default function DashboardPage() {
         <section className="grid h-screen min-h-0 min-w-0 grid-rows-[76px_minmax(0,1fr)] overflow-hidden border-r border-border max-xl:border-r-0">
           <header className="flex items-center justify-between gap-4 border-b border-border bg-background/80 px-5 py-4 backdrop-blur md:px-6 max-md:flex-col max-md:items-stretch">
             <div>
-              <h1 className="text-[22px] font-black leading-tight tracking-tight">
+              <h1 className="text-[22px] font-semibold leading-tight tracking-tight">
                 Copy Trading Dashboard
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -331,7 +337,7 @@ export default function DashboardPage() {
               <section className={cn(panelClass, "grid gap-5 p-5 md:p-6")}>
                 <div className="flex items-start justify-between gap-5 max-md:flex-col">
                   <div>
-                    <h2 className="max-w-3xl text-3xl font-black leading-none tracking-tight md:text-[30px]">
+                    <h2 className="max-w-3xl text-3xl font-semibold leading-none tracking-tight md:text-[30px]">
                       Welcome back to your copy trading workspace.
                     </h2>
                     <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -418,7 +424,7 @@ export default function DashboardPage() {
               </div>
 
               <Button asChild>
-                <Link href={isSubscriptionActive ? "/onboarding" : "/#pricing"}>
+                <Link href={nextStepHref}>
                   {isSubscriptionActive
                     ? "Continue Setup"
                     : "Complete Payment"}

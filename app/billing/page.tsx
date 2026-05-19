@@ -23,26 +23,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { PLAN_DETAILS } from "@/lib/plans"
+import { getPlanDetails } from "@/lib/plans"
 import { getSubscriptionSummary } from "@/lib/subscription"
 import { createClient } from "@/utils/supabase/client"
+
+const dateFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+})
 
 function formatDate(value?: string) {
   if (!value) return "Not available"
 
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value))
+  return dateFormatter.format(new Date(value))
 }
 
 function BillingContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const { push } = useRouter()
+  const { get } = useSearchParams()
   const [user, setUser] = useState<User | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
-  const showSuccess = searchParams.get("success") === "true"
+  const showSuccess = get("success") === "true"
 
   useEffect(() => {
     const supabase = createClient()
@@ -53,14 +55,14 @@ function BillingContent() {
       } = await supabase.auth.getUser()
 
       if (!currentUser) {
-        router.push("/login")
+        push("/login")
         return
       }
 
       const subscription = getSubscriptionSummary(currentUser)
 
       if (!subscription.isPaid) {
-        router.push("/dashboard")
+        push("/dashboard")
         return
       }
 
@@ -69,13 +71,14 @@ function BillingContent() {
     }
 
     loadUser()
-  }, [router])
+  }, [push])
 
   if (isLoadingUser || !user) {
     return null
   }
 
-  const proPlan = PLAN_DETAILS.pro
+  const subscription = getSubscriptionSummary(user)
+  const activePlan = getPlanDetails(subscription.plan)
   const isEmailConfirmed = Boolean(user.email_confirmed_at)
 
   return (
@@ -87,11 +90,11 @@ function BillingContent() {
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge>Pro active</Badge>
+                <Badge>{activePlan.name} active</Badge>
                 <Badge variant="outline">Billing</Badge>
               </div>
 
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-3xl font-semibold tracking-tight">
                 Billing
               </h1>
 
@@ -122,7 +125,7 @@ function BillingContent() {
                 <div>
                   <p className="font-medium">Payment confirmed</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Your Pro plan is active. Billing details are shown below.
+                    Your {activePlan.name} plan is active. Billing details are shown below.
                   </p>
                 </div>
               </CardContent>
@@ -146,15 +149,15 @@ function BillingContent() {
                   <div className="flex flex-col gap-4 rounded-lg border border-border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Plan</p>
-                      <p className="text-2xl font-bold">{proPlan.name}</p>
+                      <p className="text-2xl font-bold">{activePlan.name}</p>
                     </div>
 
                     <div className="sm:text-right">
                       <p className="text-sm text-muted-foreground">Price</p>
                       <p className="text-2xl font-bold">
-                        {proPlan.price}
+                        {activePlan.price}
                         <span className="text-sm font-normal text-muted-foreground">
-                          {proPlan.period}
+                          {activePlan.period}
                         </span>
                       </p>
                     </div>
@@ -172,7 +175,11 @@ function BillingContent() {
                       <p className="text-xs font-medium uppercase text-muted-foreground">
                         Billing Cycle
                       </p>
-                      <p className="mt-1 font-medium">Monthly</p>
+                      <p className="mt-1 font-medium">
+                        {subscription.plan === "profit-sharing"
+                          ? "Setup + profit share"
+                          : "Monthly"}
+                      </p>
                     </div>
 
                     <div className="rounded-lg border border-border bg-muted/30 p-4 sm:col-span-2">
@@ -239,7 +246,7 @@ function BillingContent() {
                   </div>
 
                   <Button variant="outline" asChild>
-                    <Link href="/checkout?plan=pro">
+                    <Link href={`/checkout?plan=${subscription.plan}`}>
                       <CreditCard data-icon="inline-start" />
                       Update Payment
                     </Link>
@@ -253,7 +260,7 @@ function BillingContent() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText aria-hidden="true" />
-                    Pro Features
+                    {activePlan.name} Features
                   </CardTitle>
                   <CardDescription>
                     Included with your active subscription.
@@ -261,7 +268,7 @@ function BillingContent() {
                 </CardHeader>
 
                 <CardContent className="grid gap-3">
-                  {proPlan.features.map((feature) => (
+                  {activePlan.features.map((feature) => (
                     <div
                       key={feature}
                       className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3"
@@ -286,7 +293,7 @@ function BillingContent() {
 
                 <CardContent>
                   <div className="rounded-lg border border-border bg-muted/30 p-4">
-                    <p className="font-medium">Pro subscription active</p>
+                    <p className="font-medium">{activePlan.name} subscription active</p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       Invoice records will appear here after payment history is
                       stored in the app database.

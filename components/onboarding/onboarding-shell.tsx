@@ -16,7 +16,6 @@ import {
   Loader2,
   PauseCircle,
   Power,
-  Save,
   Shield,
   SlidersHorizontal,
   UserRound,
@@ -504,29 +503,6 @@ export function OnboardingShell() {
     showToast("Copy trading stopped. No new copied trades will be placed.", "warn", "Copy trading paused")
   }
 
-  function saveDraft() {
-    const payload = {
-      businessState,
-      profile,
-      riskAcknowledgements,
-      riskSettings,
-      okxCredentials: {
-        apiKey: okxCredentials.apiKey,
-        secretKey: okxCredentials.secretKey ? "[sensitive]" : "",
-        passphrase: okxCredentials.passphrase ? "[sensitive]" : "",
-        environment: okxCredentials.environment,
-      },
-      savedAt: new Date().toISOString(),
-    }
-    window.localStorage.setItem("copytrade_onboarding_draft", JSON.stringify(payload))
-    addTimelineEvent({
-      title: "Onboarding draft saved",
-      description: "Current onboarding state was saved to browser local storage.",
-      status: "good",
-    })
-    showToast("Draft saved in this browser.")
-  }
-
   function goBack() {
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
     setActiveOnboardingStep(0)
@@ -665,7 +641,6 @@ export function OnboardingShell() {
             isTestingApi={isTestingApi}
             isApiVerified={businessState.apiVerified}
             onBack={goBack}
-            onSaveDraft={saveDraft}
             onTestApiKey={testApiKey}
             onEnableCopyTrading={enableCopyTrading}
           />
@@ -745,7 +720,7 @@ function SidebarItem({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-sm font-bold text-muted-foreground",
+        "flex items-center gap-3 rounded-lg border border-transparent p-3 text-sm font-bold text-muted-foreground",
         active && "border-border bg-background text-foreground shadow-sm"
       )}
     >
@@ -767,7 +742,7 @@ function OnboardingTopbar({
   return (
     <header className="flex items-center justify-between gap-4 border-b border-border bg-background/80 px-5 py-4 backdrop-blur md:px-6 max-md:flex-col max-md:items-stretch">
       <div>
-        <h1 className="text-[22px] font-black leading-tight tracking-tight">Follower Onboarding Guide</h1>
+        <h1 className="text-[22px] font-semibold leading-tight tracking-tight">Follower Onboarding Guide</h1>
         <p className="mt-1 text-sm text-muted-foreground">{statusCopy}</p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
@@ -794,7 +769,7 @@ function OnboardingStatusPanel({
     <section className={cn(panelClass, "grid gap-5 p-5 md:p-6")}>
       <div className="flex items-start justify-between gap-5 max-md:flex-col">
         <div>
-          <h2 className="max-w-3xl text-3xl font-black leading-none tracking-tight md:text-[30px]">
+          <h2 className="max-w-3xl text-3xl font-semibold leading-none tracking-tight md:text-[30px]">
             Set up your OKX copy trading account safely.
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -1333,7 +1308,7 @@ function ConfigurationDatabasePanel({
       <div className="mb-4 flex items-start gap-3">
         <Database className="mt-0.5 text-primary" />
         <div>
-          <h2 className="text-lg font-black tracking-tight">Configuration Database</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Configuration Database</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             Suggested fields to track onboarding state and follower risk controls.
           </p>
@@ -1361,7 +1336,7 @@ function OnboardingTimelinePanel({ timelineEvents }: { timelineEvents: TimelineE
       <div className="mb-4 flex items-start gap-3">
         <Activity className="mt-0.5 text-primary" />
         <div>
-          <h2 className="text-lg font-black tracking-tight">System Event Timeline</h2>
+          <h2 className="text-lg font-semibold tracking-tight">System Event Timeline</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">Backend-style audit log for onboarding activity.</p>
         </div>
       </div>
@@ -1562,7 +1537,7 @@ function RiskSettingsModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-border p-5 md:p-6">
           <div>
-            <h2 id="risk-settings-title" className="text-[22px] font-black tracking-tight">
+            <h2 id="risk-settings-title" className="text-[22px] font-semibold tracking-tight">
               Update Risk Settings
             </h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
@@ -1698,14 +1673,12 @@ function OnboardingBottomActions({
   isTestingApi,
   isApiVerified,
   onBack,
-  onSaveDraft,
   onTestApiKey,
   onEnableCopyTrading,
 }: {
   isTestingApi: boolean
   isApiVerified: boolean
   onBack: () => void
-  onSaveDraft: () => void
   onTestApiKey: () => void
   onEnableCopyTrading: () => void
 }) {
@@ -1720,15 +1693,6 @@ function OnboardingBottomActions({
         >
           <ArrowLeft data-icon="inline-start" />
           Back
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 bg-transparent"
-          onClick={onSaveDraft}
-        >
-          <Save data-icon="inline-start" />
-          Save Draft
         </Button>
       </div>
       <div className="flex flex-wrap items-center gap-3 max-md:[&>button]:flex-1">
@@ -1806,7 +1770,7 @@ function StepCard({
       )}
     >
       <div className="flex items-start justify-between gap-4">
-        <h3 className="text-lg font-black tracking-tight">{title}</h3>
+        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
         {badge}
       </div>
       {children}

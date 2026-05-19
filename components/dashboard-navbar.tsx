@@ -26,11 +26,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { getPlanDetails } from "@/lib/plans"
 import { getSubscriptionSummary } from "@/lib/subscription"
 import { createClient } from "@/utils/supabase/client"
 
 export function DashboardNavbar() {
-  const router = useRouter()
+  const { push, refresh } = useRouter()
   const [user, setUser] = useState<User | null>(null)
 
   const subscription = getSubscriptionSummary(user)
@@ -54,8 +55,8 @@ export function DashboardNavbar() {
     const supabase = createClient()
 
     await supabase.auth.signOut()
-    router.push("/login")
-    router.refresh()
+    push("/login")
+    refresh()
   }
 
   return (
@@ -111,11 +112,11 @@ export function DashboardNavbar() {
                 </>
               ) : null}
 
-              {subscription.isProPending ? (
+              {subscription.isPaymentPending ? (
                 <>
                   <Badge variant="outline">Payment pending</Badge>
                   <Button size="sm" asChild>
-                    <Link href="/checkout?plan=pro">
+                    <Link href={`/checkout?plan=${subscription.plan}`}>
                       <CreditCard data-icon="inline-start" />
                       Complete Payment
                     </Link>
@@ -123,7 +124,9 @@ export function DashboardNavbar() {
                 </>
               ) : null}
 
-              {subscription.isPaid ? <Badge>Pro active</Badge> : null}
+              {subscription.isPaid ? (
+                <Badge>{getPlanDetails(subscription.plan).name} active</Badge>
+              ) : null}
             </>
           ) : null}
 
@@ -132,7 +135,7 @@ export function DashboardNavbar() {
           {subscription.isPaid ? (
             <Button variant="outline" size="sm" asChild>
               <Link href="/onboarding">
-                <Settings className="mr-2 h-4 w-4" />
+                <Settings className="mr-2 size-4" />
                 Setup
               </Link>
             </Button>

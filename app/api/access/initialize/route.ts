@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-import { FREE_TRIAL_DAYS, isPlanId } from "@/lib/plans"
+import { FREE_TRIAL_DAYS, normalizePlanId } from "@/lib/plans"
 import { getSubscriptionSummary } from "@/lib/subscription"
 import type { ApiResponse } from "@/lib/types"
 import { createAdminClient } from "@/utils/supabase/admin"
@@ -8,9 +8,10 @@ import { createClient } from "@/utils/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { plan } = await request.json()
+    const { plan: requestedPlan } = await request.json()
+    const plan = normalizePlanId(requestedPlan)
 
-    if (!isPlanId(plan)) {
+    if (!plan) {
       const response: ApiResponse<null> = {
         success: false,
         error: "Invalid plan selected",
@@ -59,8 +60,8 @@ export async function POST(request: NextRequest) {
       app_metadata: {
         ...user.app_metadata,
         plan,
-        subscription_provider: plan === "free" ? "trial" : "paymongo",
-        subscription_status: plan === "free" ? "trialing" : "pending_payment",
+        subscription_provider: plan === "trial" ? "trial" : "paymongo",
+        subscription_status: plan === "trial" ? "trialing" : "pending_payment",
         trial_started_at:
           typeof user.app_metadata?.trial_started_at === "string"
             ? user.app_metadata.trial_started_at
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         data: {
-          accessLevel: plan === "free" ? "trial" : "pending_payment",
+          accessLevel: plan === "trial" ? "trial" : "pending_payment",
         },
         timestamp: new Date().toISOString(),
       }

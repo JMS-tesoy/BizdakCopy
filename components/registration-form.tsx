@@ -19,7 +19,7 @@ import Link from "next/link"
 import { Loader2 } from "lucide-react"
 
 export function RegistrationForm({ initialPlan = "pro" }: { initialPlan?: PlanId }) {
-  const router = useRouter()
+  const { push, refresh } = useRouter()
   const [error, setError] = useState("")
   const {
     register,
@@ -93,13 +93,13 @@ export function RegistrationForm({ initialPlan = "pro" }: { initialPlan?: PlanId
 
       await initializeAccess(values.plan)
 
-      if (values.plan === "free") {
-        router.push("/dashboard")
-        router.refresh()
+      if (values.plan === "trial") {
+        push("/dashboard")
+        refresh()
         return
       }
 
-      router.push(`/checkout?plan=${values.plan}`)
+      push(`/checkout?plan=${values.plan}`)
     } catch {
       setError("Something went wrong. Please try again.")
     }
@@ -192,8 +192,8 @@ export function RegistrationForm({ initialPlan = "pro" }: { initialPlan?: PlanId
 
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {selectedPlan === "free" ? "Create Free Account" : "Continue to Payment"}
+            {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
+            {selectedPlan === "trial" ? "Start Trial" : "Continue to Payment"}
           </Button>
 
           <p className="text-sm text-muted-foreground text-center">

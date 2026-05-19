@@ -1,7 +1,8 @@
-export const PLAN_IDS = ["free", "pro"] as const
+export const PLAN_IDS = ["trial", "pro", "profit-sharing"] as const
 export const FREE_TRIAL_DAYS = 14
 
 export type PlanId = (typeof PLAN_IDS)[number]
+export type LegacyPlanId = PlanId | "free"
 
 export const PLAN_DETAILS: Record<
   PlanId,
@@ -15,23 +16,25 @@ export const PLAN_DETAILS: Record<
     badge?: string
     ctaLabel: string
     paymongoAmountEnv: string
+    priceNote?: string
   }
 > = {
-  free: {
-    name: "Free",
+  trial: {
+    name: "Trial",
     price: "$0",
-    period: "/month",
-    description: "Explore the copy trading workflow before funding a live plan.",
+    period: "/14 days",
+    description:
+      "Preview the follower dashboard, risk setup, and OKX workflow before live activation.",
     monthlyAmount: 0,
     features: [
       "Dashboard preview",
-      "One OKX setup checklist",
-      "Risk controls preview",
+      "Risk setup walkthrough",
+      "OKX connection checklist",
       "Manual activation flow",
-      "Community support",
+      "Upgrade before live copying",
     ],
-    ctaLabel: "Start Free",
-    paymongoAmountEnv: "PAYMONGO_FREE_AMOUNT_CENTAVOS",
+    ctaLabel: "Start Trial",
+    paymongoAmountEnv: "PAYMONGO_TRIAL_AMOUNT_CENTAVOS",
   },
   pro: {
     name: "Pro",
@@ -53,12 +56,39 @@ export const PLAN_DETAILS: Record<
     ctaLabel: "Upgrade to Pro",
     paymongoAmountEnv: "PAYMONGO_PRO_AMOUNT_CENTAVOS",
   },
+  "profit-sharing": {
+    name: "Profit Sharing",
+    price: "PHP 500",
+    period: " setup",
+    description:
+      "Lower upfront access with a 20% platform share only when copied trading produces net profit.",
+    monthlyAmount: 500,
+    features: [
+      "PHP 500 setup checkout",
+      "80% of net profits kept by follower",
+      "20% platform profit share",
+      "Live OKX copy trading access",
+      "Advanced risk controls",
+      "Manual pause and emergency stop",
+    ],
+    badge: "Performance based",
+    ctaLabel: "Start Profit Sharing",
+    paymongoAmountEnv: "PAYMONGO_PROFIT_SHARING_AMOUNT_CENTAVOS",
+    priceNote: "then 20% platform share of net profits",
+  },
 }
 
 export function isPlanId(value: unknown): value is PlanId {
   return typeof value === "string" && PLAN_IDS.includes(value as PlanId)
 }
 
+export function normalizePlanId(value: unknown): PlanId | undefined {
+  if (value === "free") return "trial"
+  return isPlanId(value) ? value : undefined
+}
+
 export function getPlanDetails(plan: string | null | undefined) {
-  return isPlanId(plan) ? PLAN_DETAILS[plan] : PLAN_DETAILS.pro
+  const normalizedPlan = normalizePlanId(plan)
+
+  return normalizedPlan ? PLAN_DETAILS[normalizedPlan] : PLAN_DETAILS.pro
 }
