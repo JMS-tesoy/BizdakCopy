@@ -1,8 +1,16 @@
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { RegistrationForm } from "@/components/registration-form"
+import { isPlanId } from "@/lib/plans"
 
-export default function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>
+}) {
+  const { plan } = await searchParams
+  const initialPlan = isPlanId(plan) ? plan : "pro"
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
@@ -14,7 +22,7 @@ export default function RegisterPage() {
             <p className="text-muted-foreground">Start copying professional trading signals in minutes</p>
           </div>
 
-          <RegistrationForm />
+          <RegistrationForm initialPlan={initialPlan} />
         </div>
       </section>
 

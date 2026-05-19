@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { HeroSignalSimulator } from "@/components/hero-signal-simulator"
-import { ONBOARDING_ROUTE } from "@/lib/routes"
+import { START_SETUP_ROUTE } from "@/lib/routes"
 import { ArrowRight, TrendingUp, Shield, Zap } from "lucide-react"
 import Link from "next/link"
 
@@ -23,7 +23,7 @@ export function HeroSection() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Button size="lg" className="h-12 px-8" asChild>
-              <Link href={ONBOARDING_ROUTE}>
+              <Link href={START_SETUP_ROUTE}>
                 Start Follower Setup
                 <ArrowRight className="ml-2 size-4" />
               </Link>

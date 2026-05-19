@@ -1,4 +1,5 @@
-export const PLAN_IDS = ["starter", "pro", "enterprise"] as const
+export const PLAN_IDS = ["free", "pro"] as const
+export const FREE_TRIAL_DAYS = 14
 
 export type PlanId = (typeof PLAN_IDS)[number]
 
@@ -7,31 +8,50 @@ export const PLAN_DETAILS: Record<
   {
     name: string
     price: string
+    period: string
+    description: string
     monthlyAmount: number
     features: string[]
+    badge?: string
+    ctaLabel: string
     paymongoAmountEnv: string
   }
 > = {
-  starter: {
-    name: "Starter",
-    price: "₱4,900",
-    monthlyAmount: 490000,
-    features: ["1 OKX account", "Risk controls", "Email support"],
-    paymongoAmountEnv: "PAYMONGO_STARTER_AMOUNT_CENTAVOS",
+  free: {
+    name: "Free",
+    price: "$0",
+    period: "/month",
+    description: "Explore the copy trading workflow before funding a live plan.",
+    monthlyAmount: 0,
+    features: [
+      "Dashboard preview",
+      "One OKX setup checklist",
+      "Risk controls preview",
+      "Manual activation flow",
+      "Community support",
+    ],
+    ctaLabel: "Start Free",
+    paymongoAmountEnv: "PAYMONGO_FREE_AMOUNT_CENTAVOS",
   },
   pro: {
     name: "Pro",
-    price: "₱9,900",
-    monthlyAmount: 990000,
-    features: ["Up to 3 OKX accounts", "Priority support", "Advanced risk controls"],
+    price: "$20",
+    period: "/month",
+    description: "For followers ready to run the live OKX copy trading workflow.",
+    monthlyAmount: 2000,
+    features: [
+      "Live copy trading access",
+      "Up to 3 OKX accounts",
+      "Full signal feed",
+      "Advanced risk controls",
+      "Trade filtering options",
+      "Priority setup support",
+      "Email trade notifications",
+      "Manual pause and emergency stop",
+    ],
+    badge: "Best value",
+    ctaLabel: "Upgrade to Pro",
     paymongoAmountEnv: "PAYMONGO_PRO_AMOUNT_CENTAVOS",
-  },
-  enterprise: {
-    name: "Enterprise",
-    price: "₱24,900",
-    monthlyAmount: 2490000,
-    features: ["Unlimited OKX accounts", "Priority onboarding", "Custom support"],
-    paymongoAmountEnv: "PAYMONGO_ENTERPRISE_AMOUNT_CENTAVOS",
   },
 }
 

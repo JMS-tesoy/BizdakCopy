@@ -9,13 +9,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Badge } from "@/components/ui/badge"
+import { PasswordInput } from "@/components/password-input"
 import { registrationSchema, type RegistrationFormValues } from "@/lib/validations/auth"
-import { PLAN_DETAILS, PLAN_IDS } from "@/lib/plans"
+import { PLAN_DETAILS, PLAN_IDS, type PlanId } from "@/lib/plans"
+import { cn } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
 
-export function RegistrationForm() {
+export function RegistrationForm({ initialPlan = "pro" }: { initialPlan?: PlanId }) {
   const router = useRouter()
   const [error, setError] = useState("")
   const {
@@ -29,11 +32,25 @@ export function RegistrationForm() {
     defaultValues: {
       email: "",
       password: "",
-      plan: "pro",
+      plan: initialPlan,
     },
   })
 
   const selectedPlan = useWatch({ control, name: "plan" })
+
+  async function initializeAccess(plan: PlanId) {
+    const response = await fetch("/api/access/initialize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "Account access could not be initialized")
+    }
+  }
 
   async function onSubmit(values: RegistrationFormValues) {
     setError("")
@@ -45,8 +62,7 @@ export function RegistrationForm() {
         password: values.password,
         options: {
           data: {
-            plan: values.plan,
-            subscription_status: "inactive",
+            selected_plan: values.plan,
           },
         },
       })
@@ -61,10 +77,27 @@ export function RegistrationForm() {
         return
       }
 
-      sessionStorage.setItem(
-        "pendingUser",
-        JSON.stringify({ email: values.email, plan: values.plan, userId: data.user.id })
-      )
+      if (!data.session) {
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        })
+
+        if (loginError) {
+          setError(
+            "Account created. Please confirm your email, then log in to continue."
+          )
+          return
+        }
+      }
+
+      await initializeAccess(values.plan)
+
+      if (values.plan === "free") {
+        router.push("/dashboard")
+        router.refresh()
+        return
+      }
 
       router.push(`/checkout?plan=${values.plan}`)
     } catch {
@@ -98,9 +131,8 @@ export function RegistrationForm() {
 
           <div className="space-y-2" data-invalid={Boolean(errors.password) || undefined}>
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="Create a strong password"
               autoComplete="new-password"
               aria-invalid={Boolean(errors.password)}
@@ -125,23 +157,32 @@ export function RegistrationForm() {
             >
               {PLAN_IDS.map((planId) => {
                 const plan = PLAN_DETAILS[planId]
+                const isSelected = selectedPlan === planId
 
                 return (
                 <label
                   key={planId}
                   htmlFor={planId}
-                  className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
-                    selectedPlan === planId ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                  }`}
+                  className={cn(
+                    "flex cursor-pointer items-start justify-between gap-4 rounded-lg border p-4 transition-colors",
+                    isSelected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                  )}
                 >
                   <div className="flex items-center gap-3">
                     <RadioGroupItem value={planId} id={planId} />
                     <div>
-                      <p className="font-medium">{plan.name}</p>
-                      <p className="text-sm text-muted-foreground">{plan.features[0]}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{plan.name}</p>
+                        {plan.badge ? <Badge>{plan.badge}</Badge> : null}
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
+                      <p className="mt-2 text-sm text-muted-foreground">{plan.features.slice(0, 2).join(" • ")}</p>
                     </div>
                   </div>
-                  <span className="font-semibold">{plan.price}/mo</span>
+                  <span className="shrink-0 text-right font-semibold">
+                    {plan.price}
+                    <span className="block text-xs font-normal text-muted-foreground">{plan.period}</span>
+                  </span>
                 </label>
                 )
               })}
@@ -152,7 +193,7 @@ export function RegistrationForm() {
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Continue to Payment
+            {selectedPlan === "free" ? "Create Free Account" : "Continue to Payment"}
           </Button>
 
           <p className="text-sm text-muted-foreground text-center">

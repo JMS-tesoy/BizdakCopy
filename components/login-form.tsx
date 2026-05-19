@@ -8,12 +8,13 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PasswordInput } from "@/components/password-input"
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
 
-export function LoginForm() {
+export function LoginForm({ successMessage }: { successMessage?: string }) {
   const router = useRouter()
   const [error, setError] = useState("")
   const {
@@ -44,6 +45,7 @@ export function LoginForm() {
       }
 
       router.push("/dashboard")
+      router.refresh()
     } catch {
       setError("Something went wrong. Please try again.")
     }
@@ -53,6 +55,12 @@ export function LoginForm() {
     <Card>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <CardContent className="pt-6 space-y-4">
+          {successMessage && (
+            <div className="rounded-lg bg-success/10 p-3 text-sm text-success">
+              {successMessage}
+            </div>
+          )}
+
           {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg">{error}</div>}
 
           <div className="space-y-2" data-invalid={Boolean(errors.email) || undefined}>
@@ -74,10 +82,14 @@ export function LoginForm() {
           </div>
 
           <div className="space-y-2" data-invalid={Boolean(errors.password) || undefined}>
-            <Label htmlFor="password">Password</Label>
-            <Input
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="password">Password</Label>
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="Enter your password"
               autoComplete="current-password"
               aria-invalid={Boolean(errors.password)}

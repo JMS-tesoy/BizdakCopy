@@ -2,77 +2,38 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { PLAN_DETAILS, PLAN_IDS } from "@/lib/plans"
 import { Check } from "lucide-react"
 import Link from "next/link"
-import { ONBOARDING_ROUTE } from "@/lib/routes"
-
-const plans = [
-  {
-    name: "Starter",
-    price: "$49",
-    period: "/month",
-    description: "Perfect for solo OKX users",
-    features: ["Copy all signals", "1 OKX account", "Email notifications", "Basic support", "API access"],
-    popular: false,
-  },
-  {
-    name: "Pro",
-    price: "$99",
-    period: "/month",
-    description: "For serious traders",
-    features: [
-      "Copy all signals",
-      "Up to 3 OKX accounts",
-      "Email & SMS notifications",
-      "Priority support",
-      "API access",
-      "Trade filtering options",
-      "Risk management tools",
-    ],
-    popular: true,
-  },
-  {
-    name: "Enterprise",
-    price: "$249",
-    period: "/month",
-    description: "For institutions",
-    features: [
-      "Copy all signals",
-      "Unlimited OKX accounts",
-      "All notification channels",
-      "24/7 dedicated support",
-      "API access",
-      "Advanced filtering",
-      "Custom risk profiles",
-      "White-label options",
-    ],
-    popular: false,
-  },
-]
+import { START_SETUP_ROUTE } from "@/lib/routes"
 
 export function PricingSection() {
   return (
     <section id="pricing" className="section-fade-divider px-6 py-20">
       <div className="container mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-semibold mb-4">Simple Pricing</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4">Choose Your Follower Plan</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Choose the plan that fits your OKX trading workflow. All plans include full signal access.
+            Start free to review the workflow, then upgrade to Pro when you are ready to connect live OKX accounts.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {plans.map((plan) => (
+        <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto md:grid-cols-2">
+          {PLAN_IDS.map((planId) => {
+            const plan = PLAN_DETAILS[planId]
+            const isFeatured = planId === "pro"
+
+            return (
             <Card
-              key={plan.name}
+              key={planId}
               className={cn(
                 "h-full bg-card",
-                plan.popular && "border-primary shadow-lg ring-primary/25",
+                isFeatured && "border-primary shadow-lg ring-primary/25",
               )}
             >
               <CardHeader className="text-center">
                 <div className="mb-2 flex min-h-6 justify-center">
-                  {plan.popular ? <Badge>Most Popular</Badge> : null}
+                  {plan.badge ? <Badge>{plan.badge}</Badge> : <Badge variant="outline">Preview</Badge>}
                 </div>
                 <CardTitle>{plan.name}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
@@ -92,12 +53,13 @@ export function PricingSection() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" variant={plan.popular ? "default" : "outline"} asChild>
-                  <Link href={ONBOARDING_ROUTE}>Start Onboarding</Link>
+                <Button className="w-full" variant={isFeatured ? "default" : "outline"} asChild>
+                  <Link href={`${START_SETUP_ROUTE}?plan=${planId}`}>{plan.ctaLabel}</Link>
                 </Button>
               </CardFooter>
             </Card>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

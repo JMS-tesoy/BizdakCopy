@@ -997,7 +997,12 @@ function RiskDisclosureCard({
         Copy trading involves financial risk. You are responsible for your OKX account, API permissions, leverage,
         balances, losses, and trading decisions. Never enable withdrawal permission.
       </Callout>
-      <div className="text-sm font-semibold">Required acknowledgements</div>
+      <div>
+        <div className="text-sm font-semibold">Required acknowledgements</div>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Select each checkbox card, then confirm your acknowledgement.
+        </p>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <RiskToggle
           checked={acknowledgements.understandsLosses}
@@ -1952,15 +1957,24 @@ function RiskToggle({
   return (
     <button
       type="button"
-      aria-pressed={checked}
+      aria-checked={checked}
+      role="checkbox"
       className={cn(
-        "flex items-center gap-3 rounded-lg border border-border bg-background/60 p-3 text-left text-sm leading-5 text-foreground transition-colors hover:bg-muted/40",
+        "flex min-h-20 items-center gap-3 rounded-lg border border-border bg-background/60 p-3 text-left text-sm leading-5 text-foreground transition-colors hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
         checked && "border-primary/25 bg-primary/10"
       )}
       onClick={onClick}
     >
-      <Dot tone={checked ? "good" : "warn"}>{checked ? "OK" : "!"}</Dot>
-      <span>{children}</span>
+      <span
+        className={cn(
+          "grid size-5 shrink-0 place-items-center rounded border border-border bg-background text-transparent transition-colors [&_svg]:size-3.5",
+          checked && "border-success/25 bg-success/10 text-success"
+        )}
+        aria-hidden="true"
+      >
+        <Check />
+      </span>
+      <span className="font-semibold">{children}</span>
     </button>
   )
 }

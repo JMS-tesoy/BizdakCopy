@@ -7,45 +7,69 @@ import { Check, CreditCard, Loader2 } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getPlanDetails } from "@/lib/plans"
+import { getPlanDetails, isPlanId } from "@/lib/plans"
+import { createClient } from "@/utils/supabase/client"
+
+type CheckoutIdentity = {
+  email: string
+  userId: string
+}
 
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [checkoutIdentity, setCheckoutIdentity] = useState<CheckoutIdentity | null>(null)
 
-  const plan = searchParams.get("plan") || "pro"
+  const requestedPlan = searchParams.get("plan")
+  const plan = isPlanId(requestedPlan) ? requestedPlan : "pro"
   const details = getPlanDetails(plan)
 
   useEffect(() => {
-    const pendingUser = sessionStorage.getItem("pendingUser")
+    async function loadCheckoutIdentity() {
+      if (plan === "free") {
+        router.push("/dashboard")
+        return
+      }
 
-    if (!pendingUser) {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user?.email) {
+        setCheckoutIdentity({ email: user.email, userId: user.id })
+        return
+      }
+
       router.push("/register")
     }
-  }, [router])
+
+    loadCheckoutIdentity()
+  }, [plan, router])
 
   async function handleCheckout() {
     setLoading(true)
     setError("")
 
-    const pendingUser = sessionStorage.getItem("pendingUser")
-
-    if (!pendingUser) {
-      router.push("/register")
+    if (plan === "free") {
+      router.push("/dashboard")
       return
     }
 
-    const { email, userId } = JSON.parse(pendingUser)
+    if (!checkoutIdentity) {
+      router.push("/register")
+      return
+    }
 
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          userId,
+          email: checkoutIdentity.email,
+          userId: checkoutIdentity.userId,
           plan,
           successUrl: `${window.location.origin}/dashboard?success=true`,
           cancelUrl: `${window.location.origin}/checkout?plan=${plan}&canceled=true`,
@@ -123,7 +147,7 @@ function CheckoutContent() {
                 className="w-full font-semibold"
                 size="lg"
                 onClick={handleCheckout}
-                disabled={loading}
+                disabled={loading || !checkoutIdentity}
               >
                 {loading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

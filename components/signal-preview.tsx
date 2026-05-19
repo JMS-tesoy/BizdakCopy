@@ -11,7 +11,7 @@ import {
   ServerCog,
 } from "lucide-react"
 import Link from "next/link"
-import { ONBOARDING_ROUTE } from "@/lib/routes"
+import { START_SETUP_ROUTE } from "@/lib/routes"
 
 const signals = [
   {
@@ -156,7 +156,7 @@ export function SignalPreview() {
                 </div>
 
                 <Button className="w-full" asChild>
-                  <Link href={ONBOARDING_ROUTE}>Connect OKX Safely</Link>
+                  <Link href={START_SETUP_ROUTE}>Connect OKX Safely</Link>
                 </Button>
               </CardContent>
             </Card>

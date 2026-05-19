@@ -2,7 +2,14 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { LoginForm } from "@/components/login-form"
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ password?: string }>
+}) {
+  const { password } = await searchParams
+  const successMessage = password === "updated" ? "Password updated. You can now log in." : undefined
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
@@ -14,7 +21,7 @@ export default function LoginPage() {
             <p className="text-muted-foreground">Log in to access your dashboard</p>
           </div>
 
-          <LoginForm />
+          <LoginForm successMessage={successMessage} />
         </div>
       </section>
 

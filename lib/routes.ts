@@ -1,1 +1,1 @@
-export const ONBOARDING_ROUTE = "/onboarding"
+export const START_SETUP_ROUTE = "/register"

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+import { isPlanId } from "@/lib/plans"
 import { verifyPayMongoWebhookSignature } from "@/lib/paymongo"
 import { createAdminClient } from "@/utils/supabase/admin"
 
@@ -48,18 +49,24 @@ export async function POST(request: NextRequest) {
     const checkoutSession = event.data?.attributes?.data
     const metadata = checkoutSession?.attributes?.metadata
     const userId = metadata?.userId
+    const plan = isPlanId(metadata?.plan) ? metadata.plan : undefined
 
-    if (userId) {
+    if (userId && plan) {
       const paymentId = checkoutSession?.attributes?.payments?.[0]?.id
       const supabase = createAdminClient()
+      const {
+        data: { user },
+      } = await supabase.auth.admin.getUserById(userId)
 
       await supabase.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          plan: metadata?.plan,
-          paymongo_checkout_session_id: checkoutSession?.id,
-          paymongo_payment_id: paymentId,
+        app_metadata: {
+          ...user?.app_metadata,
+          plan,
           subscription_provider: "paymongo",
           subscription_status: "active",
+          paymongo_checkout_session_id: checkoutSession?.id,
+          paymongo_payment_id: paymentId,
+          subscription_activated_at: new Date().toISOString(),
         },
       })
     }

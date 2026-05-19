@@ -2,7 +2,7 @@ import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { ONBOARDING_ROUTE } from "@/lib/routes"
+import { START_SETUP_ROUTE } from "@/lib/routes"
 
 export function Navbar() {
   return (
@@ -49,7 +49,7 @@ export function Navbar() {
           </Button>
 
           <Button asChild>
-            <Link href={ONBOARDING_ROUTE}>Start Setup</Link>
+            <Link href={START_SETUP_ROUTE}>Start Setup</Link>
           </Button>
         </div>
       </nav>

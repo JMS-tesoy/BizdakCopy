@@ -1,15 +1,19 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ElementType } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   Activity,
   AlertTriangle,
   CheckCircle2,
+  CircleAlert,
   CircleDollarSign,
   Copy,
+  CreditCard,
   KeyRound,
+  LayoutDashboard,
+  LogOut,
   PauseCircle,
   ShieldCheck,
   SlidersHorizontal,
@@ -17,7 +21,6 @@ import {
 } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 
-import { DashboardNavbar } from "@/components/dashboard-navbar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -27,7 +30,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import { getSubscriptionSummary } from "@/lib/subscription"
 import { createClient } from "@/utils/supabase/client"
+
+const panelClass = "rounded-lg border border-border bg-card shadow-sm"
+type DashboardTone = "good" | "warn" | "bad"
+type DashboardStat = {
+  label: string
+  value: string
+  description: string
+  icon: ElementType
+  tone: DashboardTone
+}
 
 const riskSettings = [
   { label: "Copy mode", value: "Fixed USDT per trade" },
@@ -43,21 +58,24 @@ const activityItems = [
     title: "Account Created",
     description: "Your copy trading account is ready for setup.",
     status: "Done",
+    tone: "good" as const,
   },
   {
     title: "Risk Settings Ready",
     description:
       "Review trade size, daily loss limit, allowed market, and slippage before activation.",
     status: "Review",
+    tone: "good" as const,
   },
   {
     title: "OKX API Verification",
     description: "Connect and verify your OKX API before copy trading can start.",
     status: "Pending",
+    tone: "warn" as const,
   },
 ]
 
-function getDashboardStats(isSubscriptionActive: boolean) {
+function getDashboardStats(isSubscriptionActive: boolean): DashboardStat[] {
   return [
     {
       label: "Copy Trading Status",
@@ -75,7 +93,7 @@ function getDashboardStats(isSubscriptionActive: boolean) {
         ? "Connect and verify your OKX API credentials"
         : "Available after plan activation",
       icon: KeyRound,
-      tone: "warn",
+      tone: isSubscriptionActive ? "warn" : "bad",
     },
     {
       label: "Risk Settings",
@@ -85,12 +103,6 @@ function getDashboardStats(isSubscriptionActive: boolean) {
       tone: "good",
     },
   ]
-}
-
-function statusBadgeClass(tone: string) {
-  if (tone === "good") return "bg-success/10 text-success"
-  if (tone === "bad") return "bg-destructive/10 text-destructive"
-  return "bg-muted text-foreground"
 }
 
 function maskKey(value?: string) {
@@ -104,23 +116,49 @@ function getPlanLabel(plan?: string) {
   return plan.charAt(0).toUpperCase() + plan.slice(1)
 }
 
+function dashboardBadgeClass(tone: DashboardTone) {
+  return cn(
+    "h-auto rounded-full px-3 py-1.5 text-xs font-black",
+    tone === "good" && "border-primary/25 bg-primary/10 text-primary",
+    tone === "warn" && "border-border bg-muted/50 text-foreground",
+    tone === "bad" && "border-destructive/25 bg-destructive/10 text-destructive"
+  )
+}
+
+function dashboardStateClass(tone: DashboardTone) {
+  return cn(
+    "rounded-lg border p-4",
+    tone === "good" && "border-primary/25 bg-primary/10",
+    tone === "warn" && "border-border bg-background/60",
+    tone === "bad" && "border-destructive/25 bg-destructive/10"
+  )
+}
+
+function dashboardIconClass(tone: DashboardTone) {
+  return cn(
+    "flex size-7 items-center justify-center rounded-lg ring-1",
+    tone === "good" && "bg-success/10 text-success ring-success/25",
+    tone === "warn" && "bg-muted text-foreground ring-border",
+    tone === "bad" && "bg-destructive/10 text-destructive ring-destructive/25"
+  )
+}
+
+function StateIcon({ tone }: { tone: DashboardTone }) {
+  if (tone === "good") return <CheckCircle2 />
+  if (tone === "bad") return <AlertTriangle />
+  return <CircleAlert />
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [copied, setCopied] = useState(false)
 
-  const selectedPlan =
-    typeof user?.user_metadata?.plan === "string"
-      ? user.user_metadata.plan
-      : undefined
-
-  const subscriptionStatus =
-    typeof user?.user_metadata?.subscription_status === "string"
-      ? user.user_metadata.subscription_status
-      : "inactive"
-
-  const isSubscriptionActive = subscriptionStatus === "active"
+  const subscription = getSubscriptionSummary(user)
+  const selectedPlan = subscription.isPaid ? "pro" : subscription.plan
+  const isSubscriptionActive = subscription.isPaid
+  const isEmailConfirmed = Boolean(user?.email_confirmed_at)
   const dashboardStats = getDashboardStats(isSubscriptionActive)
 
   useEffect(() => {
@@ -133,6 +171,22 @@ export default function DashboardPage() {
 
       if (!currentUser) {
         router.push("/login")
+        return
+      }
+
+      if (typeof currentUser.app_metadata?.subscription_status !== "string") {
+        await fetch("/api/access/initialize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan: "free" }),
+        })
+
+        const {
+          data: { user: refreshedUser },
+        } = await supabase.auth.getUser()
+
+        setUser(refreshedUser ?? currentUser)
+        setIsLoadingUser(false)
         return
       }
 
@@ -151,57 +205,192 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  async function handleLogout() {
+    const supabase = createClient()
+
+    await supabase.auth.signOut()
+    router.push("/login")
+    router.refresh()
+  }
+
   if (isLoadingUser || !user) {
     return null
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <DashboardNavbar />
-
-      <section className="bg-page-texture px-6 pb-20 pt-24">
-        <div className="container mx-auto max-w-6xl">
-          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge variant="outline">Copy Trading Setup</Badge>
-                <Badge
-                  className={statusBadgeClass(
-                    isSubscriptionActive ? "good" : "warn"
-                  )}
-                >
-                  {isSubscriptionActive ? "Plan active" : "Plan inactive"}
-                </Badge>
-              </div>
-
-              <h1 className="text-3xl font-bold tracking-tight">
-                Welcome back
-              </h1>
-
-              <p className="mt-2 max-w-2xl text-muted-foreground">
-                Complete your OKX setup and review your risk controls before
-                copy trading can be activated.
-              </p>
+    <main className="h-screen overflow-hidden bg-background bg-page-texture text-foreground">
+      <div className="grid h-screen overflow-hidden bg-background/80 xl:grid-cols-[280px_minmax(0,1fr)_360px] lg:grid-cols-[250px_minmax(0,1fr)]">
+        <aside className="flex h-screen flex-col gap-5 overflow-auto border-r border-border bg-muted/30 p-5 max-lg:hidden">
+          <Link href="/dashboard" className="flex items-center gap-3 pb-2 font-black">
+            <div className="grid size-11 place-items-center rounded-lg bg-primary font-black text-primary-foreground shadow-sm">
+              BD
             </div>
+            <div>
+              <div className="tracking-tight">Bizdak Copy</div>
+              <div className="text-xs font-semibold text-muted-foreground">
+                User Dashboard
+              </div>
+            </div>
+          </Link>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button variant="outline" asChild>
-                <Link href="/onboarding">
-                  <SlidersHorizontal data-icon="inline-start" />
-                  Review setup
-                </Link>
-              </Button>
+          <div>
+            <div className="mb-2 mt-3 text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">
+              Workspace
+            </div>
+            <div className="grid gap-2">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-3 text-sm font-bold text-foreground shadow-sm"
+              >
+                <span className="grid size-6 place-items-center rounded-lg bg-muted">
+                  <LayoutDashboard />
+                </span>
+                <span>Copy Dashboard</span>
+              </Link>
 
-              <Button asChild>
-                <Link href="/onboarding">
-                  <KeyRound data-icon="inline-start" />
-                  Connect OKX API
+              {subscription.isPaid ? (
+                <Link
+                  href="/onboarding"
+                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-sm font-bold text-muted-foreground"
+                >
+                  <span className="grid size-6 place-items-center rounded-lg bg-muted">
+                    <SlidersHorizontal />
+                  </span>
+                  <span>Setup Guide</span>
                 </Link>
-              </Button>
+              ) : (
+                <Link
+                  href="/checkout?plan=pro"
+                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-sm font-bold text-muted-foreground"
+                >
+                  <span className="grid size-6 place-items-center rounded-lg bg-muted">
+                    <CreditCard />
+                  </span>
+                  <span>Upgrade to Setup</span>
+                </Link>
+              )}
+
+              {subscription.isPaid ? (
+                <Link
+                  href="/billing"
+                  className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-sm font-bold text-muted-foreground"
+                >
+                  <span className="grid size-6 place-items-center rounded-lg bg-muted">
+                    <CircleDollarSign />
+                  </span>
+                  <span>Billing</span>
+                </Link>
+              ) : null}
             </div>
           </div>
 
-          <Card className="mb-6 border-border bg-card/95 text-card-foreground shadow-sm">
+          <div className="mt-auto rounded-lg border border-border bg-card p-4 shadow-sm">
+            <strong className="mb-2 block text-sm">Signed in</strong>
+            <p className="truncate text-xs leading-6 text-muted-foreground">
+              {user.email ?? "No email available"}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 h-10 w-full bg-transparent"
+              onClick={handleLogout}
+            >
+              <LogOut data-icon="inline-start" />
+              Log out
+            </Button>
+          </div>
+        </aside>
+
+        <section className="grid h-screen min-h-0 min-w-0 grid-rows-[76px_minmax(0,1fr)] overflow-hidden border-r border-border max-xl:border-r-0">
+          <header className="flex items-center justify-between gap-4 border-b border-border bg-background/80 px-5 py-4 backdrop-blur md:px-6 max-md:flex-col max-md:items-stretch">
+            <div>
+              <h1 className="text-[22px] font-black leading-tight tracking-tight">
+                Copy Trading Dashboard
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Review your plan, OKX setup status, and activation readiness.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
+              <Badge
+                variant="outline"
+                className={dashboardBadgeClass(
+                  isSubscriptionActive ? "good" : "bad"
+                )}
+              >
+                {isSubscriptionActive ? "Plan active" : "Plan inactive"}
+              </Badge>
+              <Badge variant="outline" className={dashboardBadgeClass("warn")}>
+                Copy trading off
+              </Badge>
+            </div>
+          </header>
+
+          <div className="min-h-0 overflow-hidden p-5 md:p-6">
+            <div className="mx-auto grid h-full max-w-[1120px] grid-rows-[auto_minmax(0,1fr)] gap-5">
+              <section className={cn(panelClass, "grid gap-5 p-5 md:p-6")}>
+                <div className="flex items-start justify-between gap-5 max-md:flex-col">
+                  <div>
+                    <h2 className="max-w-3xl text-3xl font-black leading-none tracking-tight md:text-[30px]">
+                      Welcome back to your copy trading workspace.
+                    </h2>
+                    <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
+                      Complete setup, verify OKX credentials, and review your
+                      risk controls before copy trading can be manually enabled.
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={dashboardBadgeClass(
+                      isSubscriptionActive ? "good" : "bad"
+                    )}
+                  >
+                    {isSubscriptionActive ? "Active plan" : "Pre-activation"}
+                  </Badge>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {dashboardStats.map((item) => {
+                    const Icon = item.icon
+
+                    return (
+                      <div
+                        key={item.label}
+                        className={dashboardStateClass(item.tone)}
+                      >
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className={dashboardIconClass(item.tone)}>
+                            <Icon />
+                          </span>
+                          <span>{item.label}</span>
+                        </div>
+                        <div className="mt-3 flex items-start justify-between gap-3">
+                          <div>
+                            <strong
+                              className={cn(
+                                "text-lg",
+                                item.tone === "good" && "text-success",
+                                item.tone === "bad" && "text-destructive"
+                              )}
+                            >
+                              {item.value}
+                            </strong>
+                          <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                            {item.description}
+                          </p>
+                          </div>
+                          <span className={dashboardIconClass(item.tone)}>
+                            <StateIcon tone={item.tone} />
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+
+              <div className="grid min-h-0 gap-5 overflow-y-auto overflow-x-hidden overscroll-contain pr-2">
+                <Card className={panelClass}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 aria-hidden="true" />
@@ -238,45 +427,9 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <div className="mb-6 grid gap-4 md:grid-cols-3">
-            {dashboardStats.map((item) => {
-              const Icon = item.icon
-
-              return (
-                <Card key={item.label}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Icon aria-hidden="true" />
-                      {item.label}
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardContent>
-                    <div className="flex items-end justify-between gap-3">
-                      <div>
-                        <p className="text-2xl font-bold">{item.value}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.description}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`size-2 rounded-full ${
-                          item.tone === "good"
-                            ? "bg-success"
-                            : "bg-muted-foreground"
-                        }`}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="flex flex-col gap-6">
-              <Card>
+                <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
+            <div className="flex flex-col gap-5">
+              <Card className={panelClass}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <UserRound aria-hidden="true" />
@@ -297,11 +450,23 @@ export default function DashboardPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-lg border border-border bg-muted/30 p-4">
+                  <div
+                    className={cn(
+                      "rounded-lg border p-4",
+                      isSubscriptionActive
+                        ? "border-primary/25 bg-primary/10"
+                        : "border-destructive/25 bg-destructive/10"
+                    )}
+                  >
                     <p className="text-xs font-medium uppercase text-muted-foreground">
                       Plan
                     </p>
-                    <p className="mt-1 font-medium">
+                    <p
+                      className={cn(
+                        "mt-1 font-medium",
+                        isSubscriptionActive ? "text-success" : "text-destructive"
+                      )}
+                    >
                       {getPlanLabel(selectedPlan)}
                     </p>
                   </div>
@@ -324,7 +489,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className={panelClass}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <SlidersHorizontal aria-hidden="true" />
@@ -352,8 +517,8 @@ export default function DashboardPage() {
               </Card>
             </div>
 
-            <div className="flex flex-col gap-6">
-              <Card>
+            <div className="flex flex-col gap-5">
+              <Card className={panelClass}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <KeyRound aria-hidden="true" />
@@ -399,7 +564,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className={panelClass}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Activity aria-hidden="true" />
@@ -424,7 +589,12 @@ export default function DashboardPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
                           <p className="font-medium">{item.title}</p>
-                          <Badge variant="outline">{item.status}</Badge>
+                          <Badge
+                            variant="outline"
+                            className={dashboardBadgeClass(item.tone)}
+                          >
+                            {item.status}
+                          </Badge>
                         </div>
 
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -436,7 +606,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className={panelClass}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CircleDollarSign aria-hidden="true" />
@@ -451,24 +621,123 @@ export default function DashboardPage() {
                 <CardContent className="grid gap-3 text-sm">
                   <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3">
                     <span>Withdraw permission</span>
-                    <Badge variant="outline">Always off</Badge>
+                    <Badge
+                      variant="outline"
+                      className={dashboardBadgeClass("good")}
+                    >
+                      Always off
+                    </Badge>
                   </div>
 
                   <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3">
                     <span>Trade permission</span>
-                    <Badge variant="outline">Requires verification</Badge>
+                    <Badge
+                      variant="outline"
+                      className={dashboardBadgeClass("warn")}
+                    >
+                      Requires verification
+                    </Badge>
                   </div>
 
                   <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3">
                     <span>Copy activation</span>
-                    <Badge variant="outline">Manual only</Badge>
+                    <Badge
+                      variant="outline"
+                      className={dashboardBadgeClass("warn")}
+                    >
+                      Manual only
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </div>
-        </div>
-      </section>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside className="hidden h-screen content-start gap-4 overflow-auto border-l border-border bg-muted/30 p-5 xl:grid">
+          <Card className={panelClass}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserRound aria-hidden="true" />
+                Account
+              </CardTitle>
+              <CardDescription>Current session and plan status.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm">
+              <div className="rounded-lg border border-border bg-background/60 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="mt-1 truncate font-medium">
+                      {user.email ?? "No email available"}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={dashboardBadgeClass(
+                      isEmailConfirmed ? "good" : "warn"
+                    )}
+                  >
+                    {isEmailConfirmed ? "Confirmed" : "Unconfirmed"}
+                  </Badge>
+                </div>
+              </div>
+              <div
+                className={cn(
+                  "rounded-lg border p-3",
+                  isSubscriptionActive
+                    ? "border-primary/25 bg-primary/10"
+                    : "border-destructive/25 bg-destructive/10"
+                )}
+              >
+                <p className="text-xs text-muted-foreground">Plan</p>
+                <p
+                  className={cn(
+                    "mt-1 font-medium",
+                    isSubscriptionActive ? "text-success" : "text-destructive"
+                  )}
+                >
+                  {getPlanLabel(selectedPlan)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className={panelClass}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity aria-hidden="true" />
+                Setup Timeline
+              </CardTitle>
+              <CardDescription>Activation steps for this account.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {activityItems.map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-lg border border-border bg-background/60 p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-medium">{item.title}</p>
+                    <Badge
+                      variant="outline"
+                      className={dashboardBadgeClass(item.tone)}
+                    >
+                      {item.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
     </main>
   )
 }
